@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工程施工项目财务全景看板（完整分析）</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #f0f4f9;
+            font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+            padding: 24px 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            margin-bottom: 28px;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-block;
+        }
+        .sub {
+            color: #4b5563;
+            margin-top: 6px;
+            border-left: 4px solid #3b82f6;
+            padding-left: 14px;
+            font-size: 14px;
+        }
+        .badge {
+            background: #eef2ff;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 16px 18px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            border: 1px solid #e9eef3;
+            transition: 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px -12px rgba(0,0,0,0.15);
+        }
+        .card-label {
+            font-size: 14px;
+            color: #5b6e8c;
+        }
+        .card-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0c1b33;
+            margin-top: 8px;
+        }
+        .delta {
+            font-size: 13px;
+            margin-top: 6px;
+            color: #16a34a;
+        }
+        .row-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+            margin-bottom: 30px;
+        }
+        .chart-panel {
+            background: white;
+            border-radius: 26px;
+            padding: 18px 16px 12px 16px;
+            border: 1px solid #eef2f8;
+        }
+        .chart-panel h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-left: 12px;
+            border-left: 4px solid #3b82f6;
+            color: #1e2a4a;
+        }
+        .chart-box {
+            height: 320px;
+            width: 100%;
+        }
+        .table-section {
+            background: white;
+            border-radius: 26px;
+            padding: 18px 20px;
+            margin-bottom: 30px;
+            border: 1px solid #eef2f8;
+        }
+        .table-section h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 18px;
+            padding-left: 12px;
+            border-left: 4px solid #3b82f6;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th {
+            background: #f8fafd;
+            padding: 12px 10px;
+            font-weight: 600;
+            color: #1f2b48;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        td {
+            padding: 10px 10px;
+            border-bottom: 1px solid #edf2f7;
+            color: #2c3e5c;
+        }
+        .footer-note {
+            text-align: center;
+            margin-top: 32px;
+            font-size: 13px;
+            color: #6c7a91;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
+        }
+        @media (max-width: 800px) {
+            .row-charts { grid-template-columns: 1fr; }
+            .card-value { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🏗️ 工程施工项目财务全景看板</h1>
+        <div class="sub">收入确认 · 分包管理 · 利润预测 · 税会差异 · 成本构成 · 敏感性分析（演示数据·脱敏处理）</div>
+    </div>
+
+    <!-- 项目信息栏 -->
+    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
+        <span class="badge">📌 当前项目：城市基础设施改造项目（代号：项目X）</span>
+        <span class="badge">📐 收入确认方法：成本法（完工百分比）</span>
+        <span class="badge">📅 数据截止：2026年5月</span>
+    </div>
+
+    <!-- 第一行关键指标 -->
+    <div class="card-grid">
+        <div class="card"><div class="card-label">合同总价</div><div class="card-value">93,437,770 <span style="font-size:14px;">元</span></div></div>
+        <div class="card"><div class="card-label">预计总成本</div><div class="card-value">80,000,000 <span style="font-size:14px;">元</span></div></div>
+        <div class="card"><div class="card-label">完工进度</div><div class="card-value">21.6%</div><div class="delta">较上期 +2.1%</div></div>
+        <div class="card"><div class="card-label">预算执行率</div><div class="card-value">21.6%</div><div class="delta">(累计成本/预计总成本)</div></div>
+    </div>
+    <!-- 第二行财务指标 -->
+    <div class="card-grid">
+        <div class="card"><div class="card-label">累计确认收入</div><div class="card-value">20,182,000 <span style="font-size:14px;">元</span></div></div>
+        <div class="card"><div class="card-label">累计实际成本</div><div class="card-value">17,300,000 <span style="font-size:14px;">元</span></div></div>
+        <div class="card"><div class="card-label">合同资产(已完工未结算)</div><div class="card-value">2,182,000 <span style="font-size:14px;">元</span></div></div>
+        <div class="card"><div class="card-label">累计开票金额</div><div class="card-value">18,000,000 <span style="font-size:14px;">元</span></div></div>
+        <div class="card"><div class="card-label">累计收款金额</div><div class="card-value">15,000,000 <span style="font-size:14px;">元</span></div><div class="delta">回款率 83.3%</div></div>
+    </div>
+    <!-- 利润测算卡片 -->
+    <div class="card-grid">
+        <div class="card"><div class="card-label">预计总毛利</div><div class="card-value">13,437,770 <span style="font-size:14px;">元</span></div><div class="delta">毛利率 14.4%</div></div>
+        <div class="card"><div class="card-label">已实现毛利</div><div class="card-value">2,882,000 <span style="font-size:14px;">元</span></div><div class="delta">已实现毛利率 14.3%</div></div>
+        <div class="card"><div class="card-label">剩余预算成本</div><div class="card-value">62,700,000 <span style="font-size:14px;">元</span></div></div>
+        <div class="card"><div class="card-label">预计所得税(已实现利润)</div><div class="card-value">720,500 <span style="font-size:14px;">元</span></div></div>
+    </div>
+
+    <!-- 图表行：成本/收入趋势 + 分包执行柱状图 -->
+    <div class="row-charts">
+        <div class="chart-panel">
+            <h3>📈 累计成本 vs 累计收入（成本法）</h3>
+            <div id="trendChart" class="chart-box"></div>
+        </div>
+        <div class="chart-panel">
+            <h3>📦 分包合同执行情况</h3>
+            <div id="subcontractChart" class="chart-box"></div>
+        </div>
+    </div>
+
+    <!-- 分包明细表 -->
+    <div class="table-section">
+        <h3>📋 分包合同台账</h3>
+        <table id="subTable">
+            <thead><tr><th>分包商</th><th>合同金额(元)</th><th>已结算(元)</th><th>已付款(元)</th><th>应付余额(元)</th><th>未付余额(元)</th><th>质保金(元)</th></tr></thead>
+            <tbody id="subTableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- 第二组图表：敏感性分析 + 成本构成饼图 -->
+    <div class="row-charts">
+        <div class="chart-panel">
+            <h3>🔍 敏感性分析：预计总成本变动对毛利的影响</h3>
+            <div id="sensitivityChart" style="height: 280px;"></div>
+            <div style="margin-top: 8px; font-size:13px; color:#3b4b6e;">当前预计总成本 ¥80M，若上升5%，毛利下降约 ¥4M</div>
+        </div>
+        <div class="chart-panel">
+            <h3>🥧 成本构成（截至5月）</h3>
+            <div id="costPieChart" style="height: 280px;"></div>
+        </div>
+    </div>
+
+    <!-- 税会差异表 -->
+    <div class="table-section">
+        <h3>📊 税会差异跟踪</h3>
+        <table style="width:100%">
+            <thead><tr><th>项目</th><th>金额(元)</th><th>口径/说明</th></tr></thead>
+            <tbody>
+                <tr><td>累计会计收入</td><td>20,182,000</td><td>按完工百分比法（成本法）</td></tr>
+                <tr><td>增值税销售额</td><td>18,000,000</td><td>按累计开票金额</td></tr>
+                <tr><td>所得税应税收入</td><td>20,182,000</td><td>与会计收入一致（国税函[2008]875号）</td></tr>
+            </tbody>
+        </table>
+        <div style="background:#f1f5f9; border-radius: 20px; padding: 14px; margin-top: 18px;">
+            <div><strong>📌 合同资产（已完工未结算）</strong>：¥2,182,000 &nbsp;&nbsp;|&nbsp;&nbsp; <strong>预计增值税（按开票）</strong>：¥1,620,000</div>
+            <div style="margin-top: 6px;"><strong>⚖️ 税会差异原因</strong>：会计按履约进度确认收入，增值税按开票/收款节点，导致时间性差异，符合会计准则与税法规定。</div>
+        </div>
+    </div>
+
+    <div class="footer-note">
+        📌 本看板基于脱敏模拟数据构建，展示工程施工项目全周期财务管理核心能力：完工百分比法收入确认、分包合同执行监控、利润预测及敏感性分析、成本构成分析、税会差异跟踪。<br>
+        所有数据均为虚构，仅用于简历技能展示。
+    </div>
+</div>
+
+<script>
+    // ---------- 模拟数据 ----------
+    const months = ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05'];
+    const actualCosts = [1500000, 2200000, 1800000, 2000000, 2500000];
+    let cumCosts = [];
+    let sum = 0;
+    for(let v of actualCosts) { sum += v; cumCosts.push(sum); }
+    const totalBudget = 80000000;
+    const contractPrice = 93437770;
+    const cumRevenue = cumCosts.map(c => Math.round(c / totalBudget * contractPrice));
+
+    // 分包数据
+    const subcontracts = [
+        { name: '分包商A', contract: 12000000, settled: 5000000, paid: 4800000, warranty: 0.05 },
+        { name: '分包商B', contract: 8000000, settled: 2000000, paid: 1800000, warranty: 0.05 },
+        { name: '分包商C', contract: 5000000, settled: 1000000, paid: 900000, warranty: 0.05 }
+    ];
+    // 成本构成数据（模拟）
+    const costComposition = [
+        { name: '人工费', value: 4200000 },
+        { name: '材料费', value: 6800000 },
+        { name: '机械费', value: 2100000 },
+        { name: '分包费', value: 5000000 },
+        { name: '其他直接费', value: 1200000 }
+    ];
+
+    // 填充分包表格
+    const tbody = document.getElementById('subTableBody');
+    subcontracts.forEach(s => {
+        const row = tbody.insertRow();
+        const payable = s.contract - s.settled;
+        const unpaid = s.settled - s.paid;
+        const warranty = s.contract * s.warranty;
+        row.insertCell(0).innerText = s.name;
+        row.insertCell(1).innerText = s.contract.toLocaleString();
+        row.insertCell(2).innerText = s.settled.toLocaleString();
+        row.insertCell(3).innerText = s.paid.toLocaleString();
+        row.insertCell(4).innerText = payable.toLocaleString();
+        row.insertCell(5).innerText = unpaid.toLocaleString();
+        row.insertCell(6).innerText = warranty.toLocaleString();
+    });
+
+    // 趋势图
+    const trendChart = echarts.init(document.getElementById('trendChart'));
+    trendChart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['累计实际成本', '累计确认收入'] },
+        xAxis: { type: 'category', data: months, name: '月份' },
+        yAxis: { type: 'value', name: '金额(元)', axisLabel: { formatter: (v) => (v/1e6).toFixed(1) + 'M' } },
+        series: [
+            { name: '累计实际成本', type: 'line', data: cumCosts, lineStyle: { color: '#3b82f6', width: 3 }, symbol: 'circle' },
+            { name: '累计确认收入', type: 'line', data: cumRevenue, lineStyle: { color: '#f59e0b', width: 3 }, symbol: 'diamond' }
+        ]
+    });
+
+    // 分包柱状图
+    const subChart = echarts.init(document.getElementById('subcontractChart'));
+    subChart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['合同金额', '已结算金额', '已付款金额'] },
+        xAxis: { type: 'category', data: subcontracts.map(s => s.name), axisLabel: { rotate: 15 } },
+        yAxis: { type: 'value', name: '金额(元)' },
+        series: [
+            { name: '合同金额', type: 'bar', data: subcontracts.map(s => s.contract), itemStyle: { color: '#3b82f6' } },
+            { name: '已结算金额', type: 'bar', data: subcontracts.map(s => s.settled), itemStyle: { color: '#10b981' } },
+            { name: '已付款金额', type: 'bar', data: subcontracts.map(s => s.paid), itemStyle: { color: '#f59e0b' } }
+        ]
+    });
+
+    // 敏感性分析
+    const sensitivityChart = echarts.init(document.getElementById('sensitivityChart'));
+    const costVar = [-10, -5, 0, 5, 10];
+    const profitValues = costVar.map(v => contractPrice - totalBudget * (1 + v/100));
+    sensitivityChart.setOption({
+        tooltip: { trigger: 'axis', valueFormatter: (value) => '¥' + value.toLocaleString() },
+        xAxis: { type: 'category', data: costVar.map(v => v + '%'), name: '预计总成本变动幅度' },
+        yAxis: { type: 'value', name: '预估毛利(元)', axisLabel: { formatter: (v) => (v/1e6).toFixed(1) + 'M' } },
+        series: [{ type: 'line', data: profitValues, smooth: true, lineStyle: { color: '#ef4444', width: 3 }, areaStyle: { opacity: 0.1 }, symbol: 'circle' }]
+    });
+
+    // 成本构成饼图
+    const pieChart = echarts.init(document.getElementById('costPieChart'));
+    pieChart.setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
+        legend: { orient: 'vertical', left: 'left', data: costComposition.map(c => c.name) },
+        series: [{
+            type: 'pie',
+            radius: '55%',
+            center: ['50%', '50%'],
+            data: costComposition,
+            label: { show: true, formatter: '{b}: {d}%' },
+            emphasis: { scale: true }
+        }]
+    });
+
+    window.addEventListener('resize', () => {
+        trendChart.resize();
+        subChart.resize();
+        sensitivityChart.resize();
+        pieChart.resize();
+    });
+</script>
+</body>
+</html>
