@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电商财务经营分析看板 · 旗舰增强版</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
+    </script>
+    <script>
+        if (typeof Chart === 'undefined') {
+            document.write('<script src="https://unpkg.com/chart.js@4.4.1/dist/chart.umd.min.js"><\/script>');
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --bg: #f3f4f6;
+            --card: #fff;
+            --text: #1e293b;
+            --sub: #64748b;
+            --muted: #94a3b8;
+            --border: #e2e8f0;
+            --r: 10px;
+            --rs: 8px;
+            --pri: #4f6ef7;
+            --suc: #10b981;
+            --war: #f59e0b;
+            --dan: #ef4444;
+            --pur: #8b5cf6;
+            --tea: #06b6d4;
+            --inf: #3b82f6;
+            --up: #ef4444;
+            --down: #10b981;
+            --priL: #eff2ff;
+            --sucL: #ecfdf5;
+            --warL: #fffbeb;
+            --danL: #fef2f2;
+            --purL: #f5f3ff;
+            --teaL: #ecfeff;
+        }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .topbar {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #fff;
+            padding: 14px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .3);
+        }
+        .tbL {
+            display: flex;
+            align-items: center;
+            gap: 14px
+        }
+        .tbLogo {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, .12);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px
+        }
+        .tbTit h2 {
+            font-size: 18px;
+            font-weight: 700
+        }
+        .tbTit p {
+            font-size: 11px;
+            opacity: .7
+        }
+        .tbR {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            font-size: 13px
+        }
+        .perBtn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, .25);
+            background: transparent;
+            color: rgba(255, 255, 255, .7);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all .2s
+        }
+        .perBtn.active {
+            background: #fff;
+            color: #1e293b;
+            font-weight: 600
+        }
+        .perBtn:hover {
+            background: rgba(255, 255, 255, .1)
+        }
+        .tabNav {
+            background: var(--card);
+            border-bottom: 2px solid var(--border);
+            padding: 0 28px;
+            position: sticky;
+            top: 70px;
+            z-index: 999;
+            display: flex;
+            gap: 0;
+            overflow-x: auto;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .04);
+            flex-wrap: nowrap;
+        }
+        .tabNav button {
+            border: none;
+            background: transparent;
+            padding: 13px 18px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--sub);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            transition: all .2s;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .tabNav button:hover {
+            color: var(--pri)
+        }
+        .tabNav button.active {
+            color: var(--pri);
+            border-bottom-color: var(--pri)
+        }
+        .tabNav button .badge {
+            display: inline-block;
+            background: var(--dan);
+            color: #fff;
+            font-size: 9px;
+            padding: 1px 6px;
+            border-radius: 10px;
+            margin-left: 4px;
+            vertical-align: middle
+        }
+        .container {
+            max-width: 1680px;
+            margin: 0 auto;
+            padding: 20px 28px
+        }
+        .tabPanel {
+            display: none
+        }
+        .tabPanel.active {
+            display: block
+        }
+        .secTitle {
+            font-size: 17px;
+            font-weight: 700;
+            margin: 24px 0 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text)
+        }
+        .secTitle::before {
+            content: '';
+            width: 4px;
+            height: 18px;
+            background: var(--pri);
+            border-radius: 2px
+        }
+        .secTitle .desc {
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--muted)
+        }
+        .kpiGrid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 18px
+        }
+        .kpiCard {
+            background: var(--card);
+            border-radius: var(--r);
+            padding: 16px 20px;
+            border: 1px solid var(--border);
+            transition: all .25s;
+            position: relative;
+            overflow: hidden
+        }
+        .kpiCard:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, .08);
+            transform: translateY(-2px)
+        }
+        .kpiCard::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            border-radius: 3px 0 0 3px
+        }
+        .kpiCard.ac1::before {
+            background: var(--pri)
+        }
+        .kpiCard.ac2::before {
+            background: var(--suc)
+        }
+        .kpiCard.ac3::before {
+            background: var(--war)
+        }
+        .kpiCard.ac4::before {
+            background: var(--dan)
+        }
+        .kpiCard.ac5::before {
+            background: var(--pur)
+        }
+        .kpiCard.ac6::before {
+            background: var(--tea)
+        }
+        .kpiCard.ac7::before {
+            background: var(--inf)
+        }
+        .kpiCard.ac8::before {
+            background: #ec4899
+        }
+        .kpiCard.ac9::before {
+            background: #f97316
+        }
+        .kpiCard.ac10::before {
+            background: #14b8a6
+        }
+        .kpiHdr {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 6px
+        }
+        .kpiLbl {
+            font-size: 12px;
+            color: var(--sub);
+            font-weight: 500
+        }
+        .kpiIcon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0
+        }
+        .bgPri {
+            background: var(--priL)
+        }
+        .bgSuc {
+            background: var(--sucL)
+        }
+        .bgWar {
+            background: var(--warL)
+        }
+        .bgDan {
+            background: var(--danL)
+        }
+        .bgPur {
+            background: var(--purL)
+        }
+        .bgTea {
+            background: var(--teaL)
+        }
+        .kpiVal {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px
+        }
+        .kpiVal .u {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--sub);
+            margin-left: 3px
+        }
+        .kpiChg {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600
+        }
+        .kpiChg.up {
+            color: var(--up)
+        }
+        .kpiChg.down {
+            color: var(--down)
+        }
+        .kpiChg .lb {
+            color: var(--muted);
+            font-weight: 400;
+            margin-left: 3px
+        }
+        .chartGrid {
+            display: grid;
+            gap: 14px;
+            margin-bottom: 18px
+        }
+        .cg2 {
+            grid-template-columns: 1fr 1fr
+        }
+        .cg3 {
+            grid-template-columns: 1fr 1fr 1fr
+        }
+        .cg21 {
+            grid-template-columns: 2fr 1fr
+        }
+        .cg12 {
+            grid-template-columns: 1fr 2fr
+        }
+        .cg13 {
+            grid-template-columns: 1fr 3fr
+        }
+        .chartCard {
+            background: var(--card);
+            border-radius: var(--r);
+            padding: 16px 20px;
+            border: 1px solid var(--border);
+            transition: box-shadow .25s
+        }
+        .chartCard:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .06)
+        }
+        .chHdr {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px
+        }
+        .chTit {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 7px
+        }
+        .chTit .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%
+        }
+        .chSub {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 1px
+        }
+        .chBody {
+            position: relative;
+            height: 300px
+        }
+        .chBodyS {
+            height: 200px
+        }
+        .chBodyL {
+            height: 380px
+        }
+        .chBodyXL {
+            height: 480px
+        }
+        .badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            white-space: nowrap
+        }
+        .bgS {
+            background: var(--sucL);
+            color: var(--suc)
+        }
+        .bgW {
+            background: var(--warL);
+            color: var(--war)
+        }
+        .bgD {
+            background: var(--danL);
+            color: var(--dan)
+        }
+        .bgP {
+            background: var(--priL);
+            color: var(--pri)
+        }
+        .dataTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px
+        }
+        .dataTable th {
+            text-align: left;
+            padding: 9px 10px;
+            color: var(--sub);
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+            font-size: 11px;
+            text-transform: uppercase
+        }
+        .dataTable td {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text)
+        }
+        .dataTable tbody tr:hover {
+            background: #f8fafc;
+            cursor: pointer
+        }
+        .dataTable .num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-weight: 500
+        }
+        .dataTable .pct {
+            color: var(--sub);
+            font-size: 11px
+        }
+        .highlight td {
+            background: #f1f5f9 !important;
+            font-weight: 700
+        }
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+            font-size: 12px
+        }
+        .cDot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0
+        }
+        .drillHint {
+            font-size: 10px;
+            color: var(--muted);
+            font-style: italic
+        }
+        .insight {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            background: linear-gradient(135deg, #eff2ff 0%, #f5f3ff 100%);
+            border-left: 4px solid var(--pri);
+            border-radius: 0 var(--rs) var(--rs) 0;
+            padding: 14px 18px;
+            margin: 14px 0
+        }
+        .insight .ii {
+            font-size: 18px;
+            flex-shrink: 0
+        }
+        .insight .ic h4 {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 3px
+        }
+        .insight .ic p {
+            font-size: 11px;
+            color: var(--sub);
+            line-height: 1.7
+        }
+        .modalOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, .45);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center
+        }
+        .modalOverlay.show {
+            display: flex
+        }
+        .modal {
+            background: #fff;
+            border-radius: 14px;
+            max-width: 1100px;
+            width: 95%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .25)
+        }
+        .modalHdr {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 1
+        }
+        .modalClose {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            background: transparent;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all .2s
+        }
+        .modalClose:hover {
+            background: #fee2e2;
+            border-color: var(--dan);
+            color: var(--dan)
+        }
+        .modalBody {
+            padding: 20px 24px
+        }
+        .progRow {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px
+        }
+        .progLbl {
+            width: 110px;
+            font-size: 12px;
+            color: var(--sub);
+            flex-shrink: 0;
+            text-align: right
+        }
+        .progWrap {
+            flex: 1;
+            height: 20px;
+            background: #f1f5f9;
+            border-radius: 5px;
+            overflow: hidden
+        }
+        .progBar {
+            height: 100%;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            color: #fff
+        }
+        .progVal {
+            width: 70px;
+            text-align: right;
+            font-size: 12px;
+            font-weight: 600;
+            flex-shrink: 0
+        }
+        .progNote {
+            font-size: 10px;
+            color: var(--muted);
+            margin: -6px 0 8px 132px
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--muted);
+            font-size: 11px;
+            border-top: 1px solid var(--border);
+            margin-top: 30px
+        }
+        .filterGroup {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px
+        }
+        .filterGroup .fBtn {
+            border: 1px solid var(--border);
+            background: #fff;
+            padding: 4px 14px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all .2s;
+            color: var(--sub)
+        }
+        .filterGroup .fBtn.active {
+            border-color: var(--pri);
+            background: var(--priL);
+            color: var(--pri);
+            font-weight: 600
+        }
+        .filterGroup .fBtn:hover {
+            border-color: var(--pri)
+        }
+        .statusDot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px
+        }
+        @media(max-width:1200px) {
+            .kpiGrid {
+                grid-template-columns: repeat(2, 1fr)
+            }
+            .cg2,
+            .cg3,
+            .cg21,
+            .cg12,
+            .cg13 {
+                grid-template-columns: 1fr
+            }
+        }
+        @media(max-width:768px) {
+            .kpiGrid {
+                grid-template-columns: 1fr
+            }
+            .container {
+                padding: 12px
+            }
+            .tabNav button {
+                padding: 10px 12px;
+                font-size: 10px
+            }
+            .topbar {
+                flex-wrap: wrap;
+                gap: 8px
+            }
+            .tbR {
+                flex-wrap: wrap
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== TOPBAR ===== -->
+    <div class="topbar">
+        <div class="tbL">
+            <div class="tbLogo">📊</div>
+            <div class="tbTit"><h2>电商财务经营分析看板 · 旗舰增强版</h2><p>Multi-Dimensional Drill-Down · 2026年Q2 · 10大分析模块</p></div>
+        </div>
+        <div class="tbR">
+            <span style="opacity:.8">📅 数据截止：2026-06-30</span>
+            <button class="perBtn active">Q2</button>
+            <button class="perBtn">H1</button>
+            <button class="perBtn">年化</button>
+            <button onclick="exportAll()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">📥 导出</button>
+        </div>
+    </div>
+
+    <!-- ===== TAB NAV ===== -->
+    <div class="tabNav" id="tabNav">
+        <button class="active" data-tab="tab0">🏢 总览</button>
+        <button data-tab="tab1">🏪 店铺 <span class="badge">下钻</span></button>
+        <button data-tab="tab2">📦 产品 <span class="badge">下钻</span></button>
+        <button data-tab="tab3">💸 成本费用</button>
+        <button data-tab="tab4">🏦 平台对比</button>
+        <button data-tab="tab5">💰 税务</button>
+        <button data-tab="tab6">📋 应收</button>
+        <button data-tab="tab7">🌍 外贸</button>
+        <button data-tab="tab8">📦 供应链 <span class="badge">新</span></button>
+        <button data-tab="tab9">💧 现金流 <span class="badge">新</span></button>
+        <button data-tab="tab10">👥 用户 <span class="badge">新</span></button>
+    </div>
+
+    <div class="container">
+
+        <!-- ===== TAB 0: 总览 ===== -->
+        <div class="tabPanel active" id="tab0">
+            <div class="secTitle">核心经营指标 <span class="desc">| 2026年Q2 公司整体财务概览</span></div>
+            <div class="kpiGrid">
+                <div class="kpiCard ac1"><div class="kpiHdr"><span class="kpiLbl">总GMV</span><div class="kpiIcon bgPri">💰</div></div><div class="kpiVal">10,280<span class="u">万元</span></div><div class="kpiChg up">▲ 16.8%<span class="lb">环比</span></div></div>
+                <div class="kpiCard ac2"><div class="kpiHdr"><span class="kpiLbl">净营业收入</span><div class="kpiIcon bgSuc">💵</div></div><div class="kpiVal">8,760<span class="u">万元</span></div><div class="kpiChg up">▲ 14.2%<span class="lb">环比</span></div></div>
+                <div class="kpiCard ac3"><div class="kpiHdr"><span class="kpiLbl">毛利润</span><div class="kpiIcon bgWar">📈</div></div><div class="kpiVal">2,608<span class="u">万元</span></div><div class="kpiChg up">▲ 11.5%<span class="lb">环比</span></div></div>
+                <div class="kpiCard ac4"><div class="kpiHdr"><span class="kpiLbl">净利润</span><div class="kpiIcon bgDan">🏦</div></div><div class="kpiVal">512<span class="u">万元</span></div><div class="kpiChg down">▼ 2.8%<span class="lb">环比</span></div></div>
+                <div class="kpiCard ac5"><div class="kpiHdr"><span class="kpiLbl">综合毛利率</span><div class="kpiIcon bgPur">📊</div></div><div class="kpiVal">29.8<span class="u">%</span></div><div class="kpiChg down">▼ 0.5pp<span class="lb">环比</span></div></div>
+                <div class="kpiCard ac6"><div class="kpiHdr"><span class="kpiLbl">净利率</span><div class="kpiIcon bgTea">🎯</div></div><div class="kpiVal">5.8<span class="u">%</span></div><div class="kpiChg down">▼ 0.9pp<span class="lb">环比</span></div></div>
+                <div class="kpiCard ac7"><div class="kpiHdr"><span class="kpiLbl">综合税负率</span><div class="kpiIcon bgPri">📝</div></div><div class="kpiVal">3.42<span class="u">%</span></div><div class="kpiChg up" style="color:var(--dan)">▲ 0.2pp<span class="lb">环比</span></div></div>
+                <div class="kpiCard ac8"><div class="kpiHdr"><span class="kpiLbl">经营现金流</span><div class="kpiIcon bgSuc">💧</div></div><div class="kpiVal">698<span class="u">万元</span></div><div class="kpiChg up">▲ 6.2%<span class="lb">环比</span></div></div>
+            </div>
+            <div class="insight"><div class="ii">💡</div><div class="ic"><h4>CFO 经营洞察</h4><p>Q2整体GMV突破1亿，同比增16.8%。但净利润出现「增收不增利」信号——毛利率下滑至29.8%、净利率降至5.8%。核心侵蚀来源：①抖音渠道推广费率飙升至16.2%；②外贸海运成本同比涨18%；③退货率升至5.3%。Q3必须收紧渠道ROI管控、优化跨境物流方案。</p></div></div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div><div class="chTit"><span class="dot" style="background:var(--pri)"></span>收入与利润趋势</div><div class="chSub">近8季度 GMV/净收入/净利润</div></div></div><div class="chBody"><canvas id="c0_revTrend"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div><div class="chTit"><span class="dot" style="background:var(--dan)"></span>利润瀑布（净收入→净利润）</div><div class="chSub">逐层扣减路径</div></div></div><div class="chBody"><canvas id="c0_waterfall"></canvas></div></div>
+            </div>
+            <div class="chartGrid cg3">
+                <div class="chartCard"><div class="chHdr"><div><div class="chTit"><span class="dot" style="background:var(--tea)"></span>全店铺收入排行</div><div class="chSub">单击柱图下钻到店铺详情</div></div></div><div class="chBody"><canvas id="c0_storeRank"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div><div class="chTit"><span class="dot" style="background:var(--pur)"></span>费用结构总览</div><div class="chSub">各项费用占收入比</div></div></div><div class="chBody"><canvas id="c0_costPie"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div><div class="chTit"><span class="dot" style="background:var(--war)"></span>利润率趋势</div><div class="chSub">毛利率/净利率走势</div></div></div><div class="chBody"><canvas id="c0_marginLine"></canvas></div></div>
+            </div>
+        </div>
+
+        <!-- ===== TAB 1: 店铺 ===== -->
+        <div class="tabPanel" id="tab1">
+            <div class="secTitle">多店铺经营分析 <span class="desc">| 点击店铺行下钻到产品级毛利</span></div>
+            <div class="kpiGrid">
+                <div class="kpiCard ac1"><div class="kpiHdr"><span class="kpiLbl">店铺总数</span><div class="kpiIcon bgPri">🏪</div></div><div class="kpiVal">11<span class="u">家</span></div><div class="kpiChg up">▲ 2<span class="lb">本年新增</span></div></div>
+                <div class="kpiCard ac2"><div class="kpiHdr"><span class="kpiLbl">店铺总GMV</span><div class="kpiIcon bgSuc">🛒</div></div><div class="kpiVal">10,280<span class="u">万元</span></div></div>
+                <div class="kpiCard ac3"><div class="kpiHdr"><span class="kpiLbl">店铺总毛利</span><div class="kpiIcon bgWar">📊</div></div><div class="kpiVal">2,608<span class="u">万元</span></div></div>
+                <div class="kpiCard ac4"><div class="kpiHdr"><span class="kpiLbl">亏损店铺</span><div class="kpiIcon bgDan">⚠️</div></div><div class="kpiVal">2<span class="u">家</span></div><div class="kpiChg down">▼ 1<span class="lb">环比改善</span></div></div>
+            </div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--pri)"></span>店铺毛利对比&nbsp;<span class="drillHint">👆 点击柱图下钻</span></div></div><div class="chBodyL"><canvas id="c1_storeMargin"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--tea)"></span>店铺收入vs利润散点</div></div><div class="chBody"><canvas id="c1_scatter"></canvas></div></div>
+            </div>
+            <div class="chartCard" style="margin-bottom:16px">
+                <div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--inf)"></span>店铺经营明细 <span class="drillHint">| 点击行展开产品级毛利</span></div></div>
+                <table class="dataTable" id="storeTable">
+                    <thead><tr><th>店铺名称</th><th class="num">GMV</th><th class="num">净收入</th><th class="num">商品成本</th><th class="num">推广费</th><th class="num">佣金</th><th class="num">提成</th><th class="num">快递费</th><th class="num">仓储费</th><th class="num">毛利润</th><th class="num">毛利率</th><th class="num">净利</th><th class="num">净利率</th></tr></thead>
+                    <tbody id="storeBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== TAB 2: 产品 ===== -->
+        <div class="tabPanel" id="tab2">
+            <div class="secTitle">产品级毛利分析 <span class="desc">| 全量SKU利润排行 | 按品类筛选 | 点击行下钻单品趋势</span></div>
+            <div class="chartGrid cg12">
+                <div class="chartCard">
+                    <div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--dan)"></span>品类筛选</div></div>
+                    <div class="filterGroup" id="catFilters">
+                        <button class="fBtn active" data-cat="all">全部</button>
+                        <button class="fBtn" data-cat="服饰鞋包">服饰鞋包</button>
+                        <button class="fBtn" data-cat="美妆个护">美妆个护</button>
+                        <button class="fBtn" data-cat="食品保健">食品保健</button>
+                        <button class="fBtn" data-cat="数码3C">数码3C</button>
+                        <button class="fBtn" data-cat="家居日用">家居日用</button>
+                        <button class="fBtn" data-cat="母婴玩具">母婴玩具</button>
+                        <button class="fBtn" data-cat="外贸出口">外贸出口</button>
+                    </div>
+                    <div class="chBodyS"><canvas id="c2_catMargin"></canvas></div>
+                    <div style="margin-top:10px;font-size:11px;color:var(--muted)">
+                        <span style="display:inline-block;width:10px;height:10px;background:var(--dan);border-radius:50%;margin-right:4px"></span>负毛利SKU: 12个&nbsp;
+                        <span style="display:inline-block;width:10px;height:10px;background:var(--war);border-radius:50%;margin-right:4px;margin-left:12px"></span>低于20%: 28个&nbsp;
+                        <span style="display:inline-block;width:10px;height:10px;background:var(--suc);border-radius:50%;margin-right:4px;margin-left:12px"></span>高于35%: 45个
+                    </div>
+                </div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--pri)"></span>产品毛利Top20 & Bottom10</div></div><div class="chBodyL"><canvas id="c2_prodRank"></canvas></div></div>
+            </div>
+            <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--inf)"></span>全量产品毛利明细表 <span class="drillHint">| 单击行查看单品12个月趋势</span></div></div>
+                <div style="max-height:420px;overflow-y:auto">
+                    <table class="dataTable" id="prodTable"><thead><tr><th>SKU</th><th>产品名</th><th>品类</th><th>店铺</th><th class="num">月销量</th><th class="num">售价</th><th class="num">成本</th><th class="num">推广分摊</th><th class="num">快递费</th><th class="num">佣金</th><th class="num">单品毛利</th><th class="num">毛利率</th></tr></thead><tbody id="prodBody"></tbody></table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== TAB 3: 成本费用 ===== -->
+        <div class="tabPanel" id="tab3">
+            <div class="secTitle">成本费用深度拆解 <span class="desc">| 推广·提成·仓储·快递 逐项下钻</span></div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--pri)"></span>费用率拆解（占净收入）</div></div><div class="chBody"><canvas id="c3_rateBar"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--dan)"></span>费用趋势</div></div><div class="chBody"><canvas id="c3_trend"></canvas></div></div>
+            </div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--war)"></span>推广费用明细 <span class="drillHint">| 按工具/渠道拆解</span></div></div>
+                    <table class="dataTable"><thead><tr><th>推广工具</th><th>渠道</th><th class="num">花费(万)</th><th class="num">GMV(万)</th><th class="num">ROI</th><th class="num">占比</th><th>趋势</th></tr></thead><tbody>
+                            <tr><td>直通车</td><td>天猫</td><td class="num">185</td><td class="num">820</td><td class="num">4.43</td><td class="num">17.8%</td><td><span class="badge bgS">稳定</span></td></tr>
+                            <tr><td>引力魔方</td><td>天猫</td><td class="num">92</td><td class="num">380</td><td class="num">4.13</td><td class="num">8.8%</td><td><span class="badge bgW">下降</span></td></tr>
+                            <tr><td>万相台</td><td>天猫</td><td class="num">78</td><td class="num">350</td><td class="num">4.49</td><td class="num">7.5%</td><td><span class="badge bgS">稳定</span></td></tr>
+                            <tr><td>京东快车</td><td>京东</td><td class="num">95</td><td class="num">480</td><td class="num">5.05</td><td class="num">9.1%</td><td><span class="badge bgS">优秀</span></td></tr>
+                            <tr><td>千川(短视频)</td><td>抖音</td><td class="num">220</td><td class="num">550</td><td class="num">2.50</td><td class="num">21.1%</td><td><span class="badge bgD">需优化</span></td></tr>
+                            <tr><td>千川(直播)</td><td>抖音</td><td class="num">145</td><td class="num">420</td><td class="num">2.90</td><td class="num">13.9%</td><td><span class="badge bgW">下降</span></td></tr>
+                            <tr><td>多多搜索</td><td>拼多多</td><td class="num">32</td><td class="num">160</td><td class="num">5.00</td><td class="num">3.1%</td><td><span class="badge bgS">优秀</span></td></tr>
+                            <tr><td>Amazon广告</td><td>亚马逊</td><td class="num">85</td><td class="num">350</td><td class="num">4.12</td><td class="num">8.2%</td><td><span class="badge bgS">稳定</span></td></tr>
+                            <tr><td>Google Ads</td><td>独立站</td><td class="num">48</td><td class="num">160</td><td class="num">3.33</td><td class="num">4.6%</td><td><span class="badge bgW">下降</span></td></tr>
+                            <tr class="highlight"><td><strong>合计</strong></td><td></td><td class="num"><strong>1,042</strong></td><td class="num"><strong>3,850</strong></td><td class="num"><strong>3.69</strong></td><td class="num"><strong>100%</strong></td><td></td></tr>
+                        </tbody></table>
+                </div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--pur)"></span>销售提成明细 <span class="drillHint">| 按岗位</span></div></div>
+                    <table class="dataTable"><thead><tr><th>岗位</th><th>人数</th><th class="num">底薪(万)</th><th class="num">提成(万)</th><th class="num">人均提成(万)</th><th class="num">提成率</th></tr></thead><tbody>
+                            <tr><td>天猫运营</td><td class="num">8</td><td class="num">36</td><td class="num">52</td><td class="num">6.5</td><td class="num">1.87%</td></tr>
+                            <tr><td>京东运营</td><td class="num">5</td><td class="num">22</td><td class="num">36</td><td class="num">7.2</td><td class="num">1.98%</td></tr>
+                            <tr><td>抖音运营</td><td class="num">6</td><td class="num">28</td><td class="num">42</td><td class="num">7.0</td><td class="num">2.76%</td></tr>
+                            <tr><td>拼多多运营</td><td class="num">3</td><td class="num">12</td><td class="num">15</td><td class="num">5.0</td><td class="num">2.21%</td></tr>
+                            <tr><td>外贸运营</td><td class="num">4</td><td class="num">20</td><td class="num">28</td><td class="num">7.0</td><td class="num">2.02%</td></tr>
+                            <tr><td>直播主播</td><td class="num">6</td><td class="num">18</td><td class="num">38</td><td class="num">6.3</td><td class="num">3.80%</td></tr>
+                            <tr><td>客服(售前)</td><td class="num">10</td><td class="num">30</td><td class="num">18</td><td class="num">1.8</td><td class="num">0.24%</td></tr>
+                            <tr class="highlight"><td><strong>合计</strong></td><td class="num"><strong>42</strong></td><td class="num"><strong>166</strong></td><td class="num"><strong>229</strong></td><td class="num"><strong>5.5</strong></td><td class="num"><strong>2.61%</strong></td></tr>
+                        </tbody></table>
+                </div>
+            </div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--tea)"></span>仓储费用明细 <span class="drillHint">| 按仓库</span></div></div>
+                    <table class="dataTable"><thead><tr><th>仓库</th><th>城市</th><th class="num">面积(㎡)</th><th class="num">租金(万)</th><th class="num">人工(万)</th><th class="num">设备(万)</th><th class="num">合计(万)</th></tr></thead><tbody>
+                            <tr><td>华东中心仓</td><td>昆山</td><td class="num">3,200</td><td class="num">48</td><td class="num">32</td><td class="num">18</td><td class="num">98</td></tr>
+                            <tr><td>华南仓</td><td>广州</td><td class="num">2,000</td><td class="num">32</td><td class="num">20</td><td class="num">10</td><td class="num">62</td></tr>
+                            <tr><td>华北仓</td><td>郑州</td><td class="num">1,500</td><td class="num">18</td><td class="num">14</td><td class="num">7</td><td class="num">39</td></tr>
+                            <tr><td>西南仓</td><td>成都</td><td class="num">1,000</td><td class="num">12</td><td class="num">10</td><td class="num">5</td><td class="num">27</td></tr>
+                            <tr><td>海外仓(FBA)</td><td>洛杉矶</td><td class="num">800</td><td class="num">28</td><td class="num">12</td><td class="num">5</td><td class="num">45</td></tr>
+                            <tr class="highlight"><td><strong>合计</strong></td><td></td><td class="num"><strong>8,500</strong></td><td class="num"><strong>138</strong></td><td class="num"><strong>88</strong></td><td class="num"><strong>45</strong></td><td class="num"><strong>271</strong></td></tr>
+                        </tbody></table>
+                </div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--inf)"></span>快递费明细 <span class="drillHint">| 按快递公司</span></div></div>
+                    <table class="dataTable"><thead><tr><th>快递公司</th><th class="num">发件量(万)</th><th class="num">均价(元)</th><th class="num">总费用(万)</th><th class="num">占比</th><th>趋势</th></tr></thead><tbody>
+                            <tr><td>中通快递</td><td class="num">12.5</td><td class="num">2.8</td><td class="num">35</td><td class="num">21.9%</td><td><span class="badge bgS">稳定</span></td></tr>
+                            <tr><td>圆通速递</td><td class="num">10.2</td><td class="num">3.0</td><td class="num">30.6</td><td class="num">19.1%</td><td><span class="badge bgS">稳定</span></td></tr>
+                            <tr><td>韵达快递</td><td class="num">8.8</td><td class="num">2.6</td><td class="num">22.9</td><td class="num">14.3%</td><td><span class="badge bgW">上涨</span></td></tr>
+                            <tr><td>京东物流</td><td class="num">5.8</td><td class="num">4.2</td><td class="num">24.4</td><td class="num">15.2%</td><td><span class="badge bgS">优质</span></td></tr>
+                            <tr><td>顺丰速运</td><td class="num">3.2</td><td class="num">6.5</td><td class="num">20.8</td><td class="num">13.0%</td><td><span class="badge bgS">优质</span></td></tr>
+                            <tr><td>国际快递</td><td class="num">0.8</td><td class="num">11.5</td><td class="num">9.2</td><td class="num">5.7%</td><td><span class="badge bgD">贵</span></td></tr>
+                            <tr class="highlight"><td><strong>合计</strong></td><td class="num"><strong>47.8</strong></td><td class="num"><strong>3.35</strong></td><td class="num"><strong>160</strong></td><td class="num"><strong>100%</strong></td><td></td></tr>
+                        </tbody></table>
+                </div>
+            </div>
+            <div style="display:flex;gap:14px;margin-bottom:18px">
+                <div class="chartCard" style="flex:1"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--pri)"></span>仓储+快递月度趋势</div></div><div class="chBodyS"><canvas id="c3_wareExp"></canvas></div></div>
+                <div class="chartCard" style="flex:1"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--dan)"></span>各店铺单均快递费</div></div><div class="chBodyS"><canvas id="c3_perOrder"></canvas></div></div>
+            </div>
+        </div>
+
+        <!-- ===== TAB 4: 平台对比 ===== -->
+        <div class="tabPanel" id="tab4">
+            <div class="secTitle">多平台对比分析 <span class="desc">| 天猫·京东·抖音·拼多多·跨境 全方位对比</span></div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--pri)"></span>各平台核心KPI雷达</div></div><div class="chBodyL"><canvas id="c4_radar"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--suc)"></span>各平台月度GMV趋势</div></div><div class="chBodyL"><canvas id="c4_monthly"></canvas></div></div>
+            </div>
+            <div class="chartCard" style="margin-bottom:16px">
+                <div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--inf)"></span>平台经营数据全览</div></div>
+                <table class="dataTable"><thead><tr><th>维度</th><th class="num">天猫</th><th class="num">京东</th><th class="num">抖音</th><th class="num">拼多多</th><th class="num">私域</th><th class="num">亚马逊</th><th class="num">独立站</th></tr></thead><tbody>
+                        <tr><td>净收入(万)</td><td class="num">3,320</td><td class="num">2,280</td><td class="num">1,720</td><td class="num">680</td><td class="num">420</td><td class="num">580</td><td class="num">200</td></tr>
+                        <tr><td>毛利率</td><td class="num" style="color:var(--suc)">32.5%</td><td class="num" style="color:var(--suc)">28.3%</td><td class="num" style="color:var(--war)">24.6%</td><td class="num" style="color:var(--dan)">18.2%</td><td class="num" style="color:var(--suc)">38.5%</td><td class="num" style="color:var(--suc)">35.2%</td><td class="num" style="color:var(--suc)">42.0%</td></tr>
+                        <tr><td>推广费率</td><td class="num" style="color:var(--suc)">7.8%</td><td class="num" style="color:var(--suc)">5.5%</td><td class="num" style="color:var(--dan)">16.2%</td><td class="num" style="color:var(--suc)">5.1%</td><td class="num" style="color:var(--suc)">3.2%</td><td class="num" style="color:var(--suc)">8.5%</td><td class="num" style="color:var(--suc)">6.8%</td></tr>
+                        <tr><td>净利率</td><td class="num" style="color:var(--suc)">8.1%</td><td class="num" style="color:var(--suc)">7.5%</td><td class="num" style="color:var(--dan)">1.8%</td><td class="num" style="color:var(--war)">3.5%</td><td class="num" style="color:var(--suc)">12.8%</td><td class="num" style="color:var(--suc)">7.2%</td><td class="num" style="color:var(--suc)">13.5%</td></tr>
+                        <tr><td>退货率</td><td class="num" style="color:var(--suc)">3.8%</td><td class="num" style="color:var(--suc)">3.2%</td><td class="num" style="color:var(--dan)">7.8%</td><td class="num" style="color:var(--war)">6.5%</td><td class="num" style="color:var(--suc)">2.1%</td><td class="num" style="color:var(--suc)">4.5%</td><td class="num" style="color:var(--suc)">2.5%</td></tr>
+                        <tr><td>客单价(元)</td><td class="num">286</td><td class="num">312</td><td class="num">148</td><td class="num">85</td><td class="num">425</td><td class="num">380</td><td class="num">520</td></tr>
+                        <tr><td>转化率</td><td class="num">4.8%</td><td class="num">5.2%</td><td class="num">2.8%</td><td class="num">6.5%</td><td class="num">3.5%</td><td class="num">3.2%</td><td class="num">2.1%</td></tr>
+                    </tbody></table>
+            </div>
+        </div>
+
+        <!-- ===== TAB 5: 税务 ===== -->
+        <div class="tabPanel" id="tab5">
+            <div class="secTitle">税务分析 <span class="desc">| 增值税·企业所得税·附加税·关税</span></div>
+            <div class="kpiGrid">
+                <div class="kpiCard ac1"><div class="kpiHdr"><span class="kpiLbl">综合税负率</span><div class="kpiIcon bgPri">📝</div></div><div class="kpiVal">3.42<span class="u">%</span></div><div class="kpiChg up" style="color:var(--dan)">▲ 0.2pp</div></div>
+                <div class="kpiCard ac2"><div class="kpiHdr"><span class="kpiLbl">应缴增值税</span><div class="kpiIcon bgWar">🧾</div></div><div class="kpiVal">188<span class="u">万元</span></div><div class="kpiChg up" style="color:var(--dan)">▲ 12%</div></div>
+                <div class="kpiCard ac3"><div class="kpiHdr"><span class="kpiLbl">企业所得税</span><div class="kpiIcon bgDan">🏛️</div></div><div class="kpiVal">128<span class="u">万元</span></div><div class="kpiChg down">▼ 3%</div></div>
+                <div class="kpiCard ac4"><div class="kpiHdr"><span class="kpiLbl">关税(跨境)</span><div class="kpiIcon bgPur">🌐</div></div><div class="kpiVal">42<span class="u">万元</span></div><div class="kpiChg up" style="color:var(--dan)">▲ 18%</div></div>
+            </div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--pri)"></span>税负构成</div></div><div class="chBody"><canvas id="c5_taxPie"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--suc)"></span>各税种月度趋势</div></div><div class="chBody"><canvas id="c5_taxTrend"></canvas></div></div>
+            </div>
+            <div class="chartCard" style="margin-bottom:16px">
+                <div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--inf)"></span>税负明细表</div></div>
+                <table class="dataTable"><thead><tr><th>税种</th><th class="num">计税基数(万)</th><th>税率</th><th class="num">应纳税额(万)</th><th class="num">实缴(万)</th><th class="num">税负率</th><th>说明</th></tr></thead><tbody>
+                        <tr><td><strong>增值税</strong></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                        <tr><td>&nbsp;&nbsp;销项税(13%)</td><td class="num">5,820</td><td>13%</td><td class="num">756.6</td><td></td><td></td><td>一般商品</td></tr>
+                        <tr><td>&nbsp;&nbsp;销项税(9%)</td><td class="num">980</td><td>9%</td><td class="num">88.2</td><td></td><td></td><td>食品/农产品</td></tr>
+                        <tr><td>&nbsp;&nbsp;进项税抵扣</td><td class="num">-5,048</td><td></td><td class="num">-656.2</td><td></td><td></td><td>采购+物流+广告</td></tr>
+                        <tr style="background:#f1f5f9"><td>&nbsp;&nbsp;增值税净额</td><td></td><td></td><td class="num" style="font-weight:700">188.6</td><td class="num" style="font-weight:700">188.6</td><td class="num">2.15%</td><td></td></tr>
+                        <tr><td><strong>附加税</strong></td><td></td><td></td><td></td><td></td><td></td><td>增值税×12%</td></tr>
+                        <tr style="background:#f1f5f9"><td>&nbsp;&nbsp;附加税合计</td><td></td><td></td><td class="num" style="font-weight:700">22.6</td><td class="num" style="font-weight:700">22.6</td><td class="num">0.26%</td><td></td></tr>
+                        <tr><td><strong>企业所得税</strong></td><td class="num">512</td><td>25%</td><td class="num">128.0</td><td class="num">128.0</td><td class="num">1.46%</td><td>应纳税所得额×25%</td></tr>
+                        <tr><td><strong>关税(跨境)</strong></td><td class="num">350</td><td>8-12%</td><td class="num">42.0</td><td class="num">42.0</td><td class="num">0.48%</td><td>进口商品</td></tr>
+                        <tr style="background:#e2e8f0"><td><strong>税款合计</strong></td><td></td><td></td><td class="num" style="font-weight:700">381.2</td><td class="num" style="font-weight:700">381.2</td><td class="num" style="font-weight:700">4.35%</td><td></td></tr>
+                        <tr style="background:#dbeafe"><td><strong>实际综合税负率</strong></td><td class="num">8,760</td><td></td><td></td><td class="num">381.2</td><td class="num" style="font-weight:700;font-size:14px">3.42%</td><td>已扣留抵退税</td></tr>
+                    </tbody></table>
+            </div>
+        </div>
+
+        <!-- ===== TAB 6: 应收 ===== -->
+        <div class="tabPanel" id="tab6">
+            <div class="secTitle">应收账款管理 <span class="desc">| 账龄·逾期·客户信用</span></div>
+            <div class="kpiGrid">
+                <div class="kpiCard ac1"><div class="kpiHdr"><span class="kpiLbl">应收账款总额</span><div class="kpiIcon bgPri">📋</div></div><div class="kpiVal">1,256<span class="u">万元</span></div><div class="kpiChg up" style="color:var(--dan)">▲ 8.5%</div></div>
+                <div class="kpiCard ac2"><div class="kpiHdr"><span class="kpiLbl">逾期金额</span><div class="kpiIcon bgDan">⚠️</div></div><div class="kpiVal">218<span class="u">万元</span></div><div class="kpiChg up" style="color:var(--dan)">▲ 15%</div></div>
+                <div class="kpiCard ac3"><div class="kpiHdr"><span class="kpiLbl">周转天数</span><div class="kpiIcon bgWar">⏱️</div></div><div class="kpiVal">18<span class="u">天</span></div><div class="kpiChg up" style="color:var(--dan)">▲ 2天</div></div>
+                <div class="kpiCard ac4"><div class="kpiHdr"><span class="kpiLbl">坏账率</span><div class="kpiIcon bgSuc">✅</div></div><div class="kpiVal">1.2<span class="u">%</span></div><div class="kpiChg up" style="color:var(--dan)">▲ 0.3pp</div></div>
+            </div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--dan)"></span>应收账款账龄分布</div></div><div class="chBody"><canvas id="c6_aging"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--pri)"></span>应收账款月度趋势</div></div><div class="chBody"><canvas id="c6_arTrend"></canvas></div></div>
+            </div>
+            <div class="chartCard" style="margin-bottom:16px">
+                <div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--inf)"></span>应收客户明细</div></div>
+                <table class="dataTable"><thead><tr><th>客户/渠道</th><th>类型</th><th class="num">余额(万)</th><th class="num">信用期</th><th class="num">0-30天</th><th class="num">31-60天</th><th class="num">61-90天</th><th class="num">90天+</th><th>状态</th></tr></thead><tbody>
+                        <tr><td>京东自营</td><td>B2B</td><td class="num">482</td><td class="num">45</td><td class="num">420</td><td class="num">62</td><td class="num">0</td><td class="num">0</td><td><span class="badge bgS">正常</span></td></tr>
+                        <tr><td>天猫(账期)</td><td>B2B</td><td class="num">285</td><td class="num">30</td><td class="num">220</td><td class="num">45</td><td class="num">20</td><td class="num">0</td><td><span class="badge bgW">关注</span></td></tr>
+                        <tr><td>拼多多(账期)</td><td>B2B</td><td class="num">128</td><td class="num">15</td><td class="num">128</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td><span class="badge bgS">正常</span></td></tr>
+                        <tr><td>亚马逊</td><td>跨境</td><td class="num">168</td><td class="num">14</td><td class="num">168</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td><span class="badge bgS">正常</span></td></tr>
+                        <tr><td>分销商A</td><td>线下</td><td class="num">86</td><td class="num">60</td><td class="num">50</td><td class="num">18</td><td class="num">12</td><td class="num">6</td><td><span class="badge bgD">逾期</span></td></tr>
+                        <tr><td>分销商B</td><td>线下</td><td class="num">62</td><td class="num">45</td><td class="num">38</td><td class="num">14</td><td class="num">8</td><td class="num">2</td><td><span class="badge bgW">关注</span></td></tr>
+                        <tr><td>团购客户</td><td>企业</td><td class="num">45</td><td class="num">60</td><td class="num">20</td><td class="num">12</td><td class="num">8</td><td class="num">5</td><td><span class="badge bgD">逾期</span></td></tr>
+                        <tr class="highlight"><td><strong>合计</strong></td><td></td><td class="num"><strong>1,256</strong></td><td></td><td class="num"><strong>1,044</strong></td><td class="num"><strong>151</strong></td><td class="num"><strong>48</strong></td><td class="num"><strong>13</strong></td><td></td></tr>
+                    </tbody></table>
+            </div>
+        </div>
+
+        <!-- ===== TAB 7: 外贸 ===== -->
+        <div class="tabPanel" id="tab7">
+            <div class="secTitle">外贸跨境分析 <span class="desc">| 亚马逊·独立站·汇率·关税·FBA</span></div>
+            <div class="kpiGrid">
+                <div class="kpiCard ac1"><div class="kpiHdr"><span class="kpiLbl">外贸总收入</span><div class="kpiIcon bgPri">🌍</div></div><div class="kpiVal">780<span class="u">万元</span></div><div class="kpiChg up">▲ 22%</div></div>
+                <div class="kpiCard ac2"><div class="kpiHdr"><span class="kpiLbl">外贸毛利率</span><div class="kpiIcon bgSuc">📊</div></div><div class="kpiVal">36.8<span class="u">%</span></div><div class="kpiChg up">▲ 1.2pp</div></div>
+                <div class="kpiCard ac3"><div class="kpiHdr"><span class="kpiLbl">FBA仓储费</span><div class="kpiIcon bgWar">📦</div></div><div class="kpiVal">45<span class="u">万元</span></div><div class="kpiChg up" style="color:var(--dan)">▲ 18%</div></div>
+                <div class="kpiCard ac4"><div class="kpiHdr"><span class="kpiLbl">汇兑损益</span><div class="kpiIcon bgDan">💱</div></div><div class="kpiVal">-12<span class="u">万元</span></div><div class="kpiChg up" style="color:var(--dan)">▼ 亏损扩大</div></div>
+            </div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--pri)"></span>外贸收入构成</div></div><div class="chBody"><canvas id="c7_revPie"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--tea)"></span>国家/地区收入分布</div></div><div class="chBody"><canvas id="c7_country"></canvas></div></div>
+            </div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--dan)"></span>外贸成本结构</div></div><div class="chBody"><canvas id="c7_cost"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--war)"></span>汇率走势与影响</div></div><div class="chBody"><canvas id="c7_fx"></canvas></div></div>
+            </div>
+            <div class="chartCard" style="margin-bottom:16px">
+                <div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--inf)"></span>外贸站点明细</div></div>
+                <table class="dataTable"><thead><tr><th>站点</th><th>国家</th><th class="num">GMV(万$)</th><th class="num">净收入(万)</th><th class="num">毛利率</th><th class="num">关税(万)</th><th class="num">物流(万)</th><th class="num">广告(万)</th><th class="num">净利(万)</th><th class="num">净利率</th></tr></thead><tbody>
+                        <tr><td>Amazon北美</td><td>美国</td><td class="num">52</td><td class="num">380</td><td class="num" style="color:var(--suc)">38%</td><td class="num">28</td><td class="num">32</td><td class="num">45</td><td class="num">28</td><td class="num">7.4%</td></tr>
+                        <tr><td>Amazon欧洲</td><td>德/英/法</td><td class="num">25</td><td class="num">185</td><td class="num" style="color:var(--suc)">35%</td><td class="num">12</td><td class="num">10</td><td class="num">28</td><td class="num">12</td><td class="num">6.5%</td></tr>
+                        <tr><td>Shopify独立站</td><td>全球</td><td class="num">28</td><td class="num">200</td><td class="num" style="color:var(--suc)">42%</td><td class="num">0</td><td class="num">0</td><td class="num">15</td><td class="num">35</td><td class="num" style="color:var(--suc)">17.5%</td></tr>
+                        <tr><td>速卖通</td><td>俄/巴西</td><td class="num">3</td><td class="num">15</td><td class="num" style="color:var(--war)">20%</td><td class="num">2</td><td class="num">3</td><td class="num">2</td><td class="num">-1</td><td class="num" style="color:var(--dan)">-6.7%</td></tr>
+                        <tr class="highlight"><td><strong>合计</strong></td><td></td><td class="num"><strong>108</strong></td><td class="num"><strong>780</strong></td><td class="num"><strong>36.8%</strong></td><td class="num"><strong>42</strong></td><td class="num"><strong>45</strong></td><td class="num"><strong>90</strong></td><td class="num"><strong>74</strong></td><td class="num"><strong>9.5%</strong></td></tr>
+                    </tbody></table>
+            </div>
+        </div>
+
+        <!-- ===== TAB 8: 供应链 ===== -->
+        <div class="tabPanel" id="tab8">
+            <div class="secTitle">供应链分析 <span class="desc">| 供应商表现·采购成本·库存周转·缺货预警</span></div>
+            <div class="kpiGrid">
+                <div class="kpiCard ac1"><div class="kpiHdr"><span class="kpiLbl">总采购额</span><div class="kpiIcon bgPri">📦</div></div><div class="kpiVal">5,980<span class="u">万元</span></div><div class="kpiChg up">▲ 12.3%<span class="lb">同比</span></div></div>
+                <div class="kpiCard ac2"><div class="kpiHdr"><span class="kpiLbl">库存周转天数</span><div class="kpiIcon bgSuc">🔄</div></div><div class="kpiVal">38<span class="u">天</span></div><div class="kpiChg down">▼ 3天<span class="lb">优化</span></div></div>
+                <div class="kpiCard ac3"><div class="kpiHdr"><span class="kpiLbl">缺货率</span><div class="kpiIcon bgWar">⚠️</div></div><div class="kpiVal">4.2<span class="u">%</span></div><div class="kpiChg down">▼ 0.8pp<span class="lb">改善</span></div></div>
+                <div class="kpiCard ac4"><div class="kpiHdr"><span class="kpiLbl">供应商数量</span><div class="kpiIcon bgDan">🏭</div></div><div class="kpiVal">38<span class="u">家</span></div><div class="kpiChg up">▲ 3<span class="lb">新增</span></div></div>
+            </div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--pri)"></span>采购成本趋势</div></div><div class="chBody"><canvas id="c8_procureTrend"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--dan)"></span>库存周转 vs 缺货率</div></div><div class="chBody"><canvas id="c8_invTurn"></canvas></div></div>
+            </div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--war)"></span>TOP供应商采购额</div></div><div class="chBody"><canvas id="c8_supplier"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--tea)"></span>品类库存健康度</div></div>
+                    <div style="padding:8px 0">
+                        <div class="progRow"><span class="progLbl">服饰鞋包</span><div class="progWrap"><div class="progBar" style="width:72%;background:#4f6ef7">72%</div></div><span class="progVal">良好</span></div>
+                        <div class="progRow"><span class="progLbl">美妆个护</span><div class="progWrap"><div class="progBar" style="width:88%;background:#10b981">88%</div></div><span class="progVal">优秀</span></div>
+                        <div class="progRow"><span class="progLbl">食品保健</span><div class="progWrap"><div class="progBar" style="width:55%;background:#f59e0b">55%</div></div><span class="progVal">注意</span></div>
+                        <div class="progRow"><span class="progLbl">数码3C</span><div class="progWrap"><div class="progBar" style="width:43%;background:#ef4444">43%</div></div><span class="progVal">⚠️ 补货</span></div>
+                        <div class="progRow"><span class="progLbl">家居日用</span><div class="progWrap"><div class="progBar" style="width:80%;background:#8b5cf6">80%</div></div><span class="progVal">良好</span></div>
+                        <div class="progRow"><span class="progLbl">外贸出口</span><div class="progWrap"><div class="progBar" style="width:68%;background:#06b6d4">68%</div></div><span class="progVal">稳定</span></div>
+                    </div>
+                    <div class="progNote">库存健康度 = 在库天数 / 安全库存天数 × 100%</div>
+                </div>
+            </div>
+            <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--inf)"></span>供应商明细表 <span class="drillHint">| 点击行查看供货详情</span></div></div>
+                <table class="dataTable"><thead><tr><th>供应商</th><th>品类</th><th class="num">采购额(万)</th><th class="num">订单量</th><th class="num">均价(元)</th><th class="num">交货准时率</th><th class="num">次品率</th><th>等级</th></tr></thead><tbody>
+                        <tr onclick="drillSupplier('A')"><td>欣荣服饰</td><td>服饰鞋包</td><td class="num">1,280</td><td class="num">156</td><td class="num">82</td><td class="num">97.5%</td><td class="num">0.8%</td><td><span class="badge bgS">A级</span></td></tr>
+                        <tr onclick="drillSupplier('B')"><td>美妆供应链</td><td>美妆个护</td><td class="num">890</td><td class="num">98</td><td class="num">45</td><td class="num">96.2%</td><td class="num">0.5%</td><td><span class="badge bgS">A级</span></td></tr>
+                        <tr onclick="drillSupplier('C')"><td>食品集团</td><td>食品保健</td><td class="num">620</td><td class="num">72</td><td class="num">38</td><td class="num">94.8%</td><td class="num">1.2%</td><td><span class="badge bgW">B级</span></td></tr>
+                        <tr onclick="drillSupplier('D')"><td>数码科技</td><td>数码3C</td><td class="num">550</td><td class="num">45</td><td class="num">320</td><td class="num">92.3%</td><td class="num">2.1%</td><td><span class="badge bgW">B级</span></td></tr>
+                        <tr onclick="drillSupplier('E')"><td>家居用品厂</td><td>家居日用</td><td class="num">380</td><td class="num">64</td><td class="num">25</td><td class="num">95.5%</td><td class="num">0.9%</td><td><span class="badge bgS">A级</span></td></tr>
+                        <tr onclick="drillSupplier('F')"><td>跨境供应链</td><td>外贸出口</td><td class="num">320</td><td class="num">28</td><td class="num">180</td><td class="num">88.6%</td><td class="num">3.2%</td><td><span class="badge bgD">C级</span></td></tr>
+                        <tr class="highlight"><td><strong>合计</strong></td><td></td><td class="num"><strong>4,040</strong></td><td class="num"><strong>463</strong></td><td class="num"></td><td class="num"><strong>94.2%</strong></td><td class="num"><strong>1.4%</strong></td><td></td></tr>
+                    </tbody></table>
+            </div>
+        </div>
+
+        <!-- ===== TAB 9: 现金流 ===== -->
+        <div class="tabPanel" id="tab9">
+            <div class="secTitle">现金流分析 <span class="desc">| 结构·趋势·预测·健康度</span></div>
+            <div class="kpiGrid">
+                <div class="kpiCard ac1"><div class="kpiHdr"><span class="kpiLbl">经营现金流</span><div class="kpiIcon bgPri">💧</div></div><div class="kpiVal">698<span class="u">万元</span></div><div class="kpiChg up">▲ 6.2%<span class="lb">环比</span></div></div>
+                <div class="kpiCard ac2"><div class="kpiHdr"><span class="kpiLbl">投资现金流</span><div class="kpiIcon bgSuc">🏗️</div></div><div class="kpiVal">-186<span class="u">万元</span></div><div class="kpiChg down">▼ 扩大</div></div>
+                <div class="kpiCard ac3"><div class="kpiHdr"><span class="kpiLbl">筹资现金流</span><div class="kpiIcon bgWar">🏦</div></div><div class="kpiVal">-42<span class="u">万元</span></div><div class="kpiChg down">▼ 偿还贷款</div></div>
+                <div class="kpiCard ac4"><div class="kpiHdr"><span class="kpiLbl">自由现金流</span><div class="kpiIcon bgDan">💎</div></div><div class="kpiVal">512<span class="u">万元</span></div><div class="kpiChg up">▲ 4.8%<span class="lb">环比</span></div></div>
+            </div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--pri)"></span>现金流结构</div></div><div class="chBody"><canvas id="c9_cfStruct"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--suc)"></span>现金流月度趋势 & 预测</div></div><div class="chBody"><canvas id="c9_cfTrend"></canvas></div></div>
+            </div>
+            <div class="chartCard" style="margin-bottom:16px">
+                <div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--inf)"></span>现金流健康度指标</div></div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:8px 0">
+                    <div style="text-align:center;background:#f8fafc;border-radius:8px;padding:14px"><div style="font-size:22px;font-weight:700;color:#10b981">1.28</div><div style="font-size:11px;color:var(--sub)">流动比率</div></div>
+                    <div style="text-align:center;background:#f8fafc;border-radius:8px;padding:14px"><div style="font-size:22px;font-weight:700;color:#f59e0b">0.82</div><div style="font-size:11px;color:var(--sub)">速动比率</div></div>
+                    <div style="text-align:center;background:#f8fafc;border-radius:8px;padding:14px"><div style="font-size:22px;font-weight:700;color:#4f6ef7">38</div><div style="font-size:11px;color:var(--sub)">现金周转天数</div></div>
+                    <div style="text-align:center;background:#f8fafc;border-radius:8px;padding:14px"><div style="font-size:22px;font-weight:700;color:#10b981">68%</div><div style="font-size:11px;color:var(--sub)">自由现金流/净利润</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== TAB 10: 用户分析 ===== -->
+        <div class="tabPanel" id="tab10">
+            <div class="secTitle">用户/会员分析 <span class="desc">| 分层·复购·LTV·转化漏斗</span></div>
+            <div class="kpiGrid">
+                <div class="kpiCard ac1"><div class="kpiHdr"><span class="kpiLbl">总用户数</span><div class="kpiIcon bgPri">👤</div></div><div class="kpiVal">186<span class="u">万</span></div><div class="kpiChg up">▲ 18%<span class="lb">同比</span></div></div>
+                <div class="kpiCard ac2"><div class="kpiHdr"><span class="kpiLbl">活跃用户(月)</span><div class="kpiIcon bgSuc">🔥</div></div><div class="kpiVal">42.5<span class="u">万</span></div><div class="kpiChg up">▲ 8.2%<span class="lb">环比</span></div></div>
+                <div class="kpiCard ac3"><div class="kpiHdr"><span class="kpiLbl">复购率</span><div class="kpiIcon bgWar">🔄</div></div><div class="kpiVal">38.6<span class="u">%</span></div><div class="kpiChg up">▲ 1.2pp<span class="lb">环比</span></div></div>
+                <div class="kpiCard ac4"><div class="kpiHdr"><span class="kpiLbl">LTV(用户终身价值)</span><div class="kpiIcon bgDan">💎</div></div><div class="kpiVal">2,860<span class="u">元</span></div><div class="kpiChg up">▲ 4.5%<span class="lb">同比</span></div></div>
+            </div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--pri)"></span>用户分层（RFM）</div></div><div class="chBody"><canvas id="c10_rfm"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--suc)"></span>复购率趋势</div></div><div class="chBody"><canvas id="c10_repeat"></canvas></div></div>
+            </div>
+            <div class="chartGrid cg2">
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--war)"></span>转化漏斗</div></div><div class="chBody"><canvas id="c10_funnel"></canvas></div></div>
+                <div class="chartCard"><div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--tea)"></span>LTV vs 获客成本</div></div><div class="chBody"><canvas id="c10_ltvCac"></canvas></div></div>
+            </div>
+            <div class="chartCard" style="margin-bottom:16px">
+                <div class="chHdr"><div class="chTit"><span class="dot" style="background:var(--inf)"></span>用户细分数据</div></div>
+                <table class="dataTable"><thead><tr><th>用户分层</th><th class="num">人数(万)</th><th class="num">占比</th><th class="num">客单价(元)</th><th class="num">复购率</th><th class="num">LTV(元)</th><th class="num">贡献占比</th></tr></thead><tbody>
+                        <tr><td>🔴 高价值用户</td><td class="num">8.2</td><td class="num">4.4%</td><td class="num">580</td><td class="num">72%</td><td class="num">8,200</td><td class="num">38%</td></tr>
+                        <tr><td>🟡 中价值用户</td><td class="num">32.5</td><td class="num">17.5%</td><td class="num">320</td><td class="num">45%</td><td class="num">3,850</td><td class="num">35%</td></tr>
+                        <tr><td>🟢 普通用户</td><td class="num">56.8</td><td class="num">30.5%</td><td class="num">180</td><td class="num">28%</td><td class="num">1,620</td><td class="num">20%</td></tr>
+                        <tr><td>⚪ 沉睡用户</td><td class="num">88.5</td><td class="num">47.6%</td><td class="num">85</td><td class="num">8%</td><td class="num">420</td><td class="num">7%</td></tr>
+                        <tr class="highlight"><td><strong>合计/平均</strong></td><td class="num"><strong>186</strong></td><td class="num"><strong>100%</strong></td><td class="num"><strong>186</strong></td><td class="num"><strong>38.6%</strong></td><td class="num"><strong>2,860</strong></td><td class="num"><strong>100%</strong></td></tr>
+                    </tbody></table>
+            </div>
+        </div>
+
+        <!-- ===== 模态框 ===== -->
+        <div class="modalOverlay" id="drillModal">
+            <div class="modal">
+                <div class="modalHdr"><span style="font-weight:700;font-size:15px" id="modalTitle">下钻详情</span><button class="modalClose" onclick="closeModal()">✕</button></div>
+                <div class="modalBody" id="modalBody"></div>
+            </div>
+        </div>
+
+        <div class="footer">电商财务经营分析看板 · 旗舰增强版 | 10大模块 · 多维度下钻 | 数据周期：2026年Q2 | Powered by WorkBuddy</div>
+    </div>
+
+    <script>
+        // ===== 全局数据 =====
+        const Q = ['24Q3', '24Q4', '25Q1', '25Q2', '25Q3', '25Q4', '26Q1', '26Q2'];
+        const storeData = [
+            { name: '天猫旗舰店', plat: '天猫', gmv: 3820, rev: 3320, cogs: 2242, promo: 259, comm: 166, ti: 62, exp: 72,
+                ware: 48, margin: 32.5 },
+            { name: '京东自营店', plat: '京东', gmv: 2650, rev: 2280, cogs: 1635, promo: 125, comm: 137, ti: 45, exp: 56,
+                ware: 38, margin: 28.3 },
+            { name: '抖音电商店', plat: '抖音', gmv: 2100, rev: 1720, cogs: 1297, promo: 278, comm: 34, ti: 47, exp: 65,
+                ware: 28, margin: 24.6 },
+            { name: '拼多多店', plat: '拼多多', gmv: 860, rev: 680, cogs: 556, promo: 35, comm: 4, ti: 15, exp: 42, ware: 12,
+                margin: 18.2 },
+            { name: '微信小程序', plat: '私域', gmv: 450, rev: 420, cogs: 258, promo: 13, comm: 2.5, ti: 5, exp: 8, ware: 5,
+                margin: 38.5 },
+            { name: '天猫专卖店', plat: '天猫', gmv: 320, rev: 278, cogs: 189, promo: 22, comm: 14, ti: 6, exp: 5, ware: 3,
+                margin: 32.0 },
+            { name: '京东POP店', plat: '京东', gmv: 180, rev: 155, cogs: 115, promo: 8, comm: 9, ti: 3, exp: 3, ware: 2,
+                margin: 25.8 },
+            { name: '抖音矩阵号', plat: '抖音', gmv: 220, rev: 185, cogs: 142, promo: 30, comm: 3.7, ti: 6, exp: 7, ware: 3,
+                margin: 23.2 },
+            { name: '亚马逊北美', plat: '跨境', gmv: 380, rev: 380, cogs: 236, promo: 45, comm: 57, ti: 8, exp: 12, ware: 32,
+                margin: 38.0 },
+            { name: '独立站Shopify', plat: '跨境', gmv: 200, rev: 200, cogs: 116, promo: 15, comm: 0, ti: 5, exp: 6, ware: 0,
+                margin: 42.0 },
+            { name: '速卖通', plat: '跨境', gmv: 20, rev: 15, cogs: 12, promo: 2, comm: 1.2, ti: 0.5, exp: 1.5, ware: 3,
+                margin: 20.0 }
+        ];
+        const prodData = [
+            { sku: 'SP-FS-001', name: '女士羊绒大衣', cat: '服饰鞋包', store: '天猫旗舰店', sale: 1200, price: 899, cost: 480,
+                promo: 65, exp: 12, tax: 45 },
+            { sku: 'SP-FS-002', name: '男士商务衬衫', cat: '服饰鞋包', store: '京东自营店', sale: 2500, price: 299, cost: 185,
+                promo: 18, exp: 8, tax: 18 },
+            { sku: 'SP-FS-003', name: '运动跑鞋', cat: '服饰鞋包', store: '天猫旗舰店', sale: 1800, price: 459, cost: 260,
+                promo: 32, exp: 10, tax: 28 },
+            { sku: 'SP-FS-004', name: '真皮手提包', cat: '服饰鞋包', store: '天猫旗舰店', sale: 600, price: 1280, cost: 720,
+                promo: 85, exp: 15, tax: 77 },
+            { sku: 'SP-FS-005', name: '棉麻连衣裙', cat: '服饰鞋包', store: '抖音电商店', sale: 3200, price: 199, cost: 128,
+                promo: 28, exp: 6, tax: 10 },
+            { sku: 'SP-FS-006', name: '羽绒服(滞销)', cat: '服饰鞋包', store: '抖音矩阵号', sale: 180, price: 599, cost: 520,
+                promo: 65, exp: 8, tax: 30 },
+            { sku: 'SP-MZ-001', name: '精华液套装', cat: '美妆个护', store: '天猫旗舰店', sale: 1500, price: 599, cost: 210,
+                promo: 48, exp: 8, tax: 36 },
+            { sku: 'SP-MZ-002', name: '防晒霜SPF50', cat: '美妆个护', store: '京东自营店', sale: 3800, price: 129, cost: 58,
+                promo: 8, exp: 5, tax: 8 },
+            { sku: 'SP-MZ-003', name: '面膜20片装', cat: '美妆个护', store: '拼多多店', sale: 5200, price: 69, cost: 35,
+                promo: 3, exp: 3, tax: 3 },
+            { sku: 'SP-MZ-004', name: '口红套装', cat: '美妆个护', store: '抖音电商店', sale: 2800, price: 189, cost: 85,
+                promo: 22, exp: 5, tax: 11 },
+            { sku: 'SP-MZ-005', name: '洗面奶', cat: '美妆个护', store: '天猫专卖店', sale: 3500, price: 89, cost: 42, promo: 6,
+                exp: 4, tax: 5 },
+            { sku: 'SP-SP-001', name: '进口坚果礼盒', cat: '食品保健', store: '京东自营店', sale: 2000, price: 168, cost: 98,
+                promo: 10, exp: 8, tax: 10 },
+            { sku: 'SP-SP-002', name: '蛋白粉5磅', cat: '食品保健', store: '天猫旗舰店', sale: 800, price: 329, cost: 185,
+                promo: 22, exp: 12, tax: 20 },
+            { sku: 'SP-SP-003', name: '即食燕窝', cat: '食品保健', store: '微信小程序', sale: 450, price: 588, cost: 320,
+                promo: 15, exp: 15, tax: 35 },
+            { sku: 'SP-SP-004', name: '有机枸杞', cat: '食品保健', store: '拼多多店', sale: 3200, price: 39, cost: 22, promo: 2,
+                exp: 3, tax: 2 },
+            { sku: 'SP-DZ-001', name: '无线蓝牙耳机', cat: '数码3C', store: '京东自营店', sale: 1500, price: 299, cost: 185,
+                promo: 15, exp: 6, tax: 18 },
+            { sku: 'SP-DZ-002', name: '智能手表', cat: '数码3C', store: '天猫旗舰店', sale: 600, price: 899, cost: 620,
+                promo: 42, exp: 10, tax: 54 },
+            { sku: 'SP-DZ-003', name: '手机壳(滞销)', cat: '数码3C', store: '抖音电商店', sale: 800, price: 29, cost: 22,
+                promo: 8, exp: 3, tax: 2 },
+            { sku: 'SP-JJ-001', name: '乳胶枕', cat: '家居日用', store: '天猫旗舰店', sale: 1800, price: 259, cost: 142,
+                promo: 16, exp: 15, tax: 13 },
+            { sku: 'SP-JJ-002', name: '智能台灯', cat: '家居日用', store: '京东自营店', sale: 900, price: 329, cost: 185,
+                promo: 18, exp: 10, tax: 20 },
+            { sku: 'SP-JJ-003', name: '收纳箱套装', cat: '家居日用', store: '拼多多店', sale: 4500, price: 49, cost: 28,
+                promo: 2, exp: 5, tax: 2 },
+            { sku: 'SP-MY-001', name: '纸尿裤', cat: '母婴玩具', store: '天猫旗舰店', sale: 2800, price: 139, cost: 78,
+                promo: 8, exp: 6, tax: 8 },
+            { sku: 'SP-MY-002', name: '早教故事机', cat: '母婴玩具', store: '京东自营店', sale: 600, price: 329, cost: 185,
+                promo: 18, exp: 8, tax: 20 },
+            { sku: 'SP-WM-001', name: '瑜伽服(跨境)', cat: '外贸出口', store: '亚马逊北美', sale: 2200, price: 35, cost: 14,
+                del: 8, promo: 3, comm: 4, exp: 2 },
+            { sku: 'SP-WM-002', name: '蓝牙音箱(跨境)', cat: '外贸出口', store: '亚马逊北美', sale: 800, price: 58, cost: 28,
+                del: 12, promo: 5, comm: 8, exp: 3 },
+            { sku: 'SP-WM-003', name: '竹纤维毛巾(跨)', cat: '外贸出口', store: '独立站Shopify', sale: 1500, price: 22,
+                cost: 7, del: 5, promo: 1, comm: 0, exp: 2 }
+        ];
+        // 计算单品毛利
+        prodData.forEach(p => {
+            let gm = p.price - p.cost - (p.promo || 0) - (p.exp || 0) - (p.tax || 0) - (p.comm || 0) - (p.del || 0);
+            p.gm = Math.round(gm);
+            p.gmr = ((gm / p.price) * 100);
+        });
+
+        // ===== Tab 切换 =====
+        document.querySelectorAll('#tabNav button').forEach(btn => {
+            btn.onclick = function() {
+                document.querySelectorAll('#tabNav button').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                document.querySelectorAll('.tabPanel').forEach(p => p.classList.remove('active'));
+                document.getElementById(this.dataset.tab).classList.add('active');
+                // 延迟触发resize让图表自适应
+                setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+            }
+        });
+
+        Chart.defaults.font.family = "'PingFang SC','Microsoft YaHei',sans-serif";
+        Chart.defaults.font.size = 11;
+        Chart.defaults.color = '#64748b';
+        Chart.defaults.plugins.legend.labels.usePointStyle = true;
+
+        // ===== 工具函数 =====
+        function getStoreColor(i) {
+            const colors = ['#4f6ef7', '#ef4444', '#1e293b', '#f59e0b', '#8b5cf6', '#4f6ef7', '#ef4444', '#1e293b', '#06b6d4',
+                '#10b981', '#94a3b8'
+            ];
+            return colors[i % colors.length];
+        }
+
+        function closeModal() { document.getElementById('drillModal').classList.remove('show'); }
+        document.getElementById('drillModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+        function exportAll() {
+            alert('📥 导出功能：\n\n本看板支持导出为 Excel / PDF / 图片。\n\n💡 快捷方式：\n1. 使用浏览器打印 (Ctrl+P) → 另存为PDF\n2. 截图保存当前页面\n3. 数据可复制到Excel做进一步分析');
+        }
+
+        // ===== 安全初始化 =====
+        try {
+
+            // ===== TAB 0 图表 =====
+            new Chart(document.getElementById('c0_revTrend'), {
+                type: 'bar',
+                data: {
+                    labels: Q,
+                    datasets: [
+                        { type: 'bar', label: 'GMV', data: [6200, 7500, 6800, 7800, 7200, 8800, 8800, 10280],
+                            backgroundColor: 'rgba(79,110,247,.6)', borderRadius: 5, barPercentage: .55, yAxisID: 'y' },
+                        { type: 'line', label: '净收入', data: [5300, 6400, 5800, 6700, 6150, 7550, 7670, 8760],
+                            borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.1)', fill: true, tension: .4,
+                            pointRadius: 4, yAxisID: 'y' },
+                        { type: 'line', label: '净利润', data: [380, 450, 350, 420, 410, 520, 527, 512],
+                            borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 2, tension: .4,
+                            pointRadius: 4, borderDash: [6, 3], yAxisID: 'y1' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { position: 'left',
+                            grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '万' } }, y1: { position: 'right',
+                            grid: { display: false }, ticks: { callback: v => v + '万' } } } }
+            });
+
+            new Chart(document.getElementById('c0_waterfall'), {
+                type: 'bar',
+                data: {
+                    labels: ['净收入', 'COGS', '毛利', '推广费', '佣金', '提成', '快递', '仓储', '人工', '其他', '关税', '净利润'],
+                    datasets: [{
+                        data: [8760, -5980, 2780, -1042, -424, -229, -160, -271, -166, -94, -42, 512],
+                        backgroundColor: ctx => ['#10b981', '#ef4444', '#10b981', '#ef4444', '#ef4444', '#ef4444',
+                            '#ef4444', '#ef4444', '#ef4444', '#ef4444', '#ef4444', '#3b82f6'
+                        ][ctx.dataIndex],
+                        borderRadius: 3,
+                        barPercentage: .55
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
+                        y: { grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '万' } } } }
+            });
+
+            new Chart(document.getElementById('c0_storeRank'), {
+                type: 'bar',
+                data: { labels: storeData.map(s => s.name), datasets: [{ label: '净收入(万元)', data: storeData.map(s =>
+                        s.rev), backgroundColor: 'rgba(79,110,247,.65)', borderRadius: 4 }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { x: { grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '万' } }, y: { grid: { display: false } } } }
+            });
+            document.getElementById('c0_storeRank').onclick = () => { document.querySelector('[data-tab="tab1"]')
+                .click(); };
+
+            new Chart(document.getElementById('c0_costPie'), {
+                type: 'doughnut',
+                data: { labels: ['COGS', '推广费', '平台佣金', '提成', '快递费', '仓储费', '人工', '其他'], datasets: [{ data: [5980,
+                            1042, 424, 229, 160, 271, 166, 94
+                        ], backgroundColor: ['#ef4444', '#f59e0b', '#8b5cf6', '#ec4899', '#3b82f6', '#06b6d4',
+                            '#10b981', '#94a3b8'
+                        ] }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '50%', plugins: { legend: { position: 'right',
+                            labels: { font: { size: 10 }, padding: 6 } } } }
+            });
+
+            new Chart(document.getElementById('c0_marginLine'), {
+                type: 'line',
+                data: {
+                    labels: Q,
+                    datasets: [
+                        { label: '毛利率', data: [32.1, 31.8, 31.2, 30.5, 31.0, 30.2, 30.3, 29.8],
+                            borderColor: '#4f6ef7', backgroundColor: 'rgba(79,110,247,.08)', fill: true,
+                            tension: .4, pointRadius: 4, borderWidth: 2.5 },
+                        { label: '净利率', data: [7.2, 7.0, 6.0, 6.3, 6.7, 6.9, 6.9, 5.8], borderColor: '#10b981',
+                            backgroundColor: 'rgba(16,185,129,.08)', fill: true, tension: .4, pointRadius: 4,
+                            borderWidth: 2.5 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' },
+                            ticks: { callback: v => v + '%' } } } }
+            });
+
+            // ===== TAB 1 店铺 =====
+            function renderStoreTable() {
+                let h = '';
+                storeData.forEach((s, i) => {
+                    let netProfit = s.rev * (s.margin / 100) - s.promo - s.comm - s.ti - s.exp - s.ware - s.rev *
+                        0.035;
+                    let npRate = ((netProfit / s.rev) * 100).toFixed(1);
+                    let npClr = parseFloat(npRate) > 8 ? '#10b981' : parseFloat(npRate) > 3 ? '#f59e0b' :
+                    '#ef4444';
+                    h += `<tr class="storeRow" data-idx="${i}" onclick="drillStore(${i})" style="cursor:pointer">
+                        <td><span class="tag"><span class="cDot" style="background:${getStoreColor(i)}"></span>${s.name}</span></td>
+                        <td class="num">${s.gmv}</td><td class="num">${s.rev}</td><td class="num">${s.cogs}</td>
+                        <td class="num">${s.promo}</td><td class="num">${s.comm}</td><td class="num">${s.ti}</td>
+                        <td class="num">${s.exp}</td><td class="num">${s.ware}</td>
+                        <td class="num">${(s.rev-s.cogs).toFixed(0)}</td><td class="num">${s.margin}%</td>
+                        <td class="num" style="color:${npClr}">${netProfit.toFixed(0)}</td><td class="num" style="color:${npClr}">${npRate}%</td></tr>`;
+                });
+                document.getElementById('storeBody').innerHTML = h;
+            }
+            renderStoreTable();
+
+            window.drillStore = function(idx) {
+                let s = storeData[idx];
+                let prods = prodData.filter(p => p.store === s.name);
+                let h =
+                    `<div style="margin-bottom:16px"><strong>🏪 ${s.name}</strong> &nbsp;| GMV: ${s.gmv}万 | 毛利率: ${s.margin}%</div>`;
+                if (prods.length === 0) { h += '<p style="color:var(--muted);font-size:12px">该店铺暂无产品明细</p>'; } else {
+                    h +=
+                        '<table class="dataTable"><thead><tr><th>SKU</th><th>产品名</th><th class="num">月销量</th><th class="num">售价(元)</th><th class="num">成本(元)</th><th class="num">单品毛利(元)</th><th class="num">毛利率</th></tr></thead><tbody>';
+                    prods.forEach(p => {
+                        h +=
+                            `<tr><td>${p.sku}</td><td>${p.name}</td><td class="num">${p.sale}</td><td class="num">${p.price}</td><td class="num">${p.cost}</td><td class="num" style="color:${p.gm<0?'#ef4444':'#10b981'}">${p.gm}</td><td class="num">${p.gmr.toFixed(1)}%</td></tr>`;
+                    });
+                    h += '</tbody></table>';
+                }
+                document.getElementById('modalTitle').textContent = `🏪 店铺下钻: ${s.name}`;
+                document.getElementById('modalBody').innerHTML = h;
+                document.getElementById('drillModal').classList.add('show');
+            };
+
+            new Chart(document.getElementById('c1_storeMargin'), {
+                type: 'bar',
+                data: {
+                    labels: storeData.map(s => s.name),
+                    datasets: [{
+                        label: '毛利率(%)',
+                        data: storeData.map(s => s.margin),
+                        backgroundColor: storeData.map(s => s.margin > 35 ? 'rgba(16,185,129,.65)' : s
+                            .margin > 25 ? 'rgba(79,110,247,.65)' : s.margin > 18 ?
+                            'rgba(245,158,11,.65)' : 'rgba(239,68,68,.65)'),
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } },
+                        y: { grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '%' } } } }
+            });
+            document.getElementById('c1_storeMargin').onclick = function(evt) {
+                let chart = Chart.getChart('c1_storeMargin');
+                let points = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+                if (points.length > 0) window.drillStore(points[0].index);
+            };
+
+            new Chart(document.getElementById('c1_scatter'), {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        { label: '盈利店铺', data: storeData.filter(s => s.margin >= 25).map(s => ({ x: s.rev,
+                                y: s.margin })), backgroundColor: '#10b981', pointRadius: 8 },
+                        { label: '关注店铺', data: storeData.filter(s => s.margin < 25 && s.margin >= 18).map(s => ({
+                                x: s.rev, y: s.margin
+                            })), backgroundColor: '#f59e0b', pointRadius: 8 },
+                        { label: '亏损店铺', data: storeData.filter(s => s.margin < 18).map(s => ({ x: s.rev,
+                                y: s.margin })), backgroundColor: '#ef4444', pointRadius: 8 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' }, tooltip: { callbacks: { label: ctx => '收入:' + ctx.raw.x +
+                                '万, 毛利率:' + ctx.raw.y + '%' } } }, scales: { x: { title: { display: true,
+                                text: '净收入(万元)' }, grid: { color: '#f1f5f9' } }, y: { title: { display: true,
+                                text: '毛利率(%)' }, grid: { color: '#f1f5f9' } } } }
+            });
+
+            // ===== TAB 2 产品 =====
+            function renderProdTable(cat = 'all') {
+                let pd = cat === 'all' ? prodData : prodData.filter(p => p.cat === cat);
+                let h = '';
+                pd.forEach(p => {
+                    h += `<tr onclick="drillProd('${p.sku}')" style="cursor:pointer">
+                        <td>${p.sku}</td><td>${p.name}</td><td>${p.cat}</td><td>${p.store}</td>
+                        <td class="num">${p.sale}</td><td class="num">${p.price}</td><td class="num">${p.cost}</td>
+                        <td class="num">${(p.promo||0).toFixed(0)}</td><td class="num">${(p.exp||0).toFixed(0)}</td>
+                        <td class="num">${(p.tax||0).toFixed(0)}</td>
+                        <td class="num" style="color:${p.gm<0?'#ef4444':'#1e293b'};font-weight:600">${p.gm}</td>
+                        <td class="num" style="color:${p.gm<0?'#ef4444':p.gmr<20?'#f59e0b':'#10b981'};font-weight:600">${p.gmr.toFixed(1)}%</td></tr>`;
+                });
+                document.getElementById('prodBody').innerHTML = h;
+            }
+            renderProdTable();
+            document.querySelectorAll('#catFilters .fBtn').forEach(btn => {
+                btn.onclick = function() {
+                    document.querySelectorAll('#catFilters .fBtn').forEach(b => { b.classList.remove(
+                        'active'); });
+                    this.classList.add('active');
+                    renderProdTable(this.dataset.cat);
+                };
+            });
+
+            window.drillProd = function(sku) {
+                let p = prodData.find(x => x.sku === sku);
+                if (!p) return;
+                let h =
+                    `<div style="margin-bottom:16px"><strong>📦 ${p.sku} ${p.name}</strong> | ${p.cat} | ${p.store}</div>`;
+                h +=
+                    '<table class="dataTable"><thead><tr><th>指标</th><th class="num">数值</th><th>说明</th></tr></thead><tbody>';
+                h += `<tr><td>月销量</td><td class="num">${p.sale}件</td><td></td></tr>`;
+                h += `<tr><td>售价</td><td class="num">¥${p.price}</td><td></td></tr>`;
+                h += `<tr><td>采购成本</td><td class="num">¥${p.cost}</td><td></td></tr>`;
+                h += `<tr><td>推广费分摊</td><td class="num">¥${(p.promo||0).toFixed(0)}</td><td>按销量分摊</td></tr>`;
+                h += `<tr><td>快递费</td><td class="num">¥${(p.exp||0).toFixed(0)}</td><td></td></tr>`;
+                h += `<tr><td>平台佣金</td><td class="num">¥${(p.tax||0).toFixed(0)}</td><td></td></tr>`;
+                if (p.del) h += `<tr><td>国际物流</td><td class="num">¥${p.del}</td><td>跨境商品</td></tr>`;
+                if (p.comm) h += `<tr><td>销售提成</td><td class="num">¥${p.comm}</td><td></td></tr>`;
+                h +=
+                    `<tr style="background:#f1f5f9;font-weight:700"><td>单品毛利</td><td class="num" style="color:${p.gm<0?'#ef4444':'#10b981'}">¥${p.gm}</td><td>毛利率: ${p.gmr.toFixed(1)}%</td></tr>`;
+                h += '</tbody></table>';
+                h +=
+                    `<div style="margin-top:14px;font-size:11px;color:var(--sub)">📊 近12个月销量趋势：<div class="chBodyS"><canvas id="modal_prodTrend"></canvas></div></div>`;
+                document.getElementById('modalTitle').textContent = `📦 产品下钻: ${p.sku} ${p.name}`;
+                document.getElementById('modalBody').innerHTML = h;
+                document.getElementById('drillModal').classList.add('show');
+                setTimeout(() => {
+                    new Chart(document.getElementById('modal_prodTrend'), {
+                        type: 'line',
+                        data: {
+                            labels: ['7月', '8月', '9月', '10月', '11月', '12月', '1月', '2月', '3月', '4月',
+                                '5月', '6月'
+                            ],
+                            datasets: [{
+                                data: p.sale ? [p.sale * 0.7, p.sale * 0.8, p.sale * 0.9, p.sale *
+                                    1.1, p.sale * 1.2, p.sale * 1.3, p.sale * 0.85, p.sale *
+                                    0.7, p.sale * 0.9, p.sale * 1.0, p.sale * 0.95, p.sale
+                                ].map(v => Math.round(v)) : '',
+                                borderColor: '#4f6ef7',
+                                backgroundColor: 'rgba(79,110,247,.1)',
+                                fill: true,
+                                tension: .4
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                            scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' } } } }
+                    });
+                }, 200);
+            };
+
+            new Chart(document.getElementById('c2_catMargin'), {
+                type: 'bar',
+                data: { labels: ['服饰鞋包', '美妆个护', '食品保健', '数码3C', '家居日用', '母婴玩具', '外贸出口'], datasets: [
+                    { label: '平均毛利率', data: [32.5, 38.2, 22.1, 16.8, 28.6, 31.5, 36.8],
+                        backgroundColor: 'rgba(79,110,247,.6)', borderRadius: 3 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' }, ticks: { callback: v =>
+                                v + '%' } } } }
+            });
+
+            let prodRank = prodData.map(p => ({ name: p.name.slice(0, 6), gm: p.gmr })).sort((a, b) => b.gm - a.gm);
+            let top = prodRank.slice(0, 15);
+            let bot = prodRank.slice(-8);
+            new Chart(document.getElementById('c2_prodRank'), {
+                type: 'bar',
+                data: {
+                    labels: [...top.map(x => x.name), ...bot.map(x => x.name)],
+                    datasets: [{
+                        label: '毛利率(%)',
+                        data: [...top.map(x => x.gm), ...bot.map(x => x.gm)],
+                        backgroundColor: [...top.map(() => 'rgba(16,185,129,.6)'), ...bot.map(() =>
+                            'rgba(239,68,68,.6)')],
+                        borderRadius: 3
+                    }]
+                },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { x: { grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '%' } }, y: { grid: { display: false } } } }
+            });
+
+            // ===== TAB 3 成本费用 =====
+            new Chart(document.getElementById('c3_rateBar'), {
+                type: 'bar',
+                data: {
+                    labels: ['COGS', '推广费', '平台佣金', '提成', '快递费', '仓储费', '人工', '其他'],
+                    datasets: [
+                        { data: [68.3, 11.9, 4.84, 2.61, 1.83, 3.09, 1.89, 1.07],
+                            backgroundColor: ['#ef4444', '#f59e0b', '#8b5cf6', '#ec4899', '#3b82f6', '#06b6d4',
+                                '#10b981', '#94a3b8'
+                            ], borderRadius: 3, barPercentage: .5 },
+                        { label: '行业均值', data: [67, 9.5, 4.5, 2.2, 2.0, 3.0, 2.0, 1.2], type: 'line',
+                            borderColor: '#64748b', borderDash: [5, 5], pointRadius: 3, fill: false }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' },
+                            ticks: { callback: v => v + '%' } } } }
+            });
+
+            new Chart(document.getElementById('c3_trend'), {
+                type: 'line',
+                data: {
+                    labels: Q,
+                    datasets: [
+                        { label: '推广费率', data: [10.0, 10.2, 10.5, 10.8, 11.0, 11.5, 11.8, 11.9],
+                            borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.08)', fill: true,
+                            tension: .4 },
+                        { label: '仓储费率', data: [2.9, 3.0, 2.9, 3.1, 3.2, 3.1, 3.1, 3.09],
+                            borderColor: '#06b6d4', tension: .4 },
+                        { label: '快递费率', data: [1.9, 1.9, 1.8, 1.8, 1.8, 1.9, 1.8, 1.83],
+                            borderColor: '#3b82f6', tension: .4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' },
+                            ticks: { callback: v => v + '%' } } } }
+            });
+
+            new Chart(document.getElementById('c3_wareExp'), {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [
+                        { label: '仓储费(万元)', data: [42, 44, 43, 46, 48, 48], borderColor: '#06b6d4',
+                            yAxisID: 'y', tension: .4 },
+                        { label: '快递费(万元)', data: [24, 25, 26, 27, 28, 28], borderColor: '#3b82f6',
+                            yAxisID: 'y1', tension: .4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { position: 'left',
+                            grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '万' } }, y1: { position: 'right',
+                            grid: { display: false }, ticks: { callback: v => v + '万' } } } }
+            });
+
+            new Chart(document.getElementById('c3_perOrder'), {
+                type: 'bar',
+                data: {
+                    labels: storeData.map(s => s.name.slice(0, 4)),
+                    datasets: [{
+                        data: [6.2, 7.7, 5.6, 5.3, 8.0, 5.0, 5.5, 5.0, 4.0, 6.0, 4.5],
+                        backgroundColor: storeData.map((s, i) => s.exp > 7 ? 'rgba(239,68,68,.6)' : s
+                            .exp > 5 ? 'rgba(245,158,11,.6)' : 'rgba(16,185,129,.6)'),
+                        borderRadius: 3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } },
+                        y: { grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '元' } } } }
+            });
+
+            // ===== TAB 4 平台对比 =====
+            let platScores = [
+                [75, 70, 80, 65, 85, 60, 80],
+                [72, 78, 62, 58, 88, 75, 65],
+                [55, 45, 70, 85, 50, 55, 50],
+                [78, 80, 45, 68, 82, 65, 58],
+                [72, 78, 55, 65, 88, 65, 72],
+                [68, 72, 60, 58, 85, 68, 70]
+            ];
+            new Chart(document.getElementById('c4_radar'), {
+                type: 'radar',
+                data: {
+                    labels: ['毛利率', '净利率', '管控费比', '转化率', '复购率', '退货控制', 'ROI'],
+                    datasets: [
+                        { label: '天猫', data: platScores[0], borderColor: '#4f6ef7',
+                            backgroundColor: 'rgba(79,110,247,.15)', borderWidth: 2 },
+                        { label: '京东', data: platScores[1], borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239,68,68,.15)', borderWidth: 2 },
+                        { label: '抖音', data: platScores[2], borderColor: '#1e293b',
+                            backgroundColor: 'rgba(30,41,59,.15)', borderWidth: 2 },
+                        { label: '拼多多', data: platScores[3], borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245,158,11,.15)', borderWidth: 2 },
+                        { label: '私域', data: platScores[4], borderColor: '#8b5cf6',
+                            backgroundColor: 'rgba(139,92,246,.15)', borderWidth: 2 },
+                        { label: '跨境', data: platScores[5], borderColor: '#06b6d4',
+                            backgroundColor: 'rgba(6,182,212,.15)', borderWidth: 2 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } },
+                    scales: { r: { beginAtZero: true, max: 100, grid: { color: '#e2e8f0' }, angleLines: { color: '#e2e8f0' },
+                            pointLabels: { font: { size: 10 } }, ticks: { display: false } } } }
+            });
+
+            new Chart(document.getElementById('c4_monthly'), {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [
+                        { label: '天猫', data: [980, 1050, 1150, 1100, 1200, 1250], borderColor: '#4f6ef7',
+                            tension: .4 },
+                        { label: '京东', data: [680, 700, 720, 720, 740, 760], borderColor: '#ef4444',
+                            tension: .4 },
+                        { label: '抖音', data: [420, 450, 510, 580, 550, 600], borderColor: '#1e293b',
+                            tension: .4 },
+                        { label: '拼多多', data: [180, 190, 220, 230, 210, 230], borderColor: '#f59e0b',
+                            tension: .4 },
+                        { label: '跨境', data: [180, 185, 220, 240, 250, 260], borderColor: '#06b6d4',
+                            tension: .4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' },
+                            ticks: { callback: v => v + '万' } } } }
+            });
+
+            // ===== TAB 5 税务 =====
+            new Chart(document.getElementById('c5_taxPie'), {
+                type: 'doughnut',
+                data: { labels: ['增值税', '附加税', '企业所得税', '关税'], datasets: [{ data: [188.6, 22.6, 128, 42],
+                        backgroundColor: ['#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4'] }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '50%', plugins: { legend: { position: 'right',
+                            labels: { font: { size: 10 } } } } }
+            });
+
+            new Chart(document.getElementById('c5_taxTrend'), {
+                type: 'bar',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [
+                        { label: '增值税', data: [28, 26, 30, 34, 32, 38], backgroundColor: '#f59e0b',
+                            borderRadius: 3, barPercentage: .5 },
+                        { label: '企业所得税(预缴)', data: [20, 20, 20, 22, 22, 24], backgroundColor: '#ef4444',
+                            borderRadius: 3, barPercentage: .5 },
+                        { label: '关税', data: [5, 6, 7, 7, 8, 9], backgroundColor: '#06b6d4', borderRadius: 3,
+                            barPercentage: .5 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' },
+                            ticks: { callback: v => v + '万' } } } }
+            });
+
+            // ===== TAB 6 应收 =====
+            new Chart(document.getElementById('c6_aging'), {
+                type: 'bar',
+                data: { labels: ['0-30天', '31-60天', '61-90天', '90天以上'], datasets: [{ data: [1044, 151, 48, 13],
+                        backgroundColor: ['#10b981', '#f59e0b', '#f97316', '#ef4444'], borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' }, ticks: { callback: v =>
+                                v + '万' } } } }
+            });
+
+            new Chart(document.getElementById('c6_arTrend'), {
+                type: 'line',
+                data: {
+                    labels: Q,
+                    datasets: [
+                        { label: '应收账款(万元)', data: [780, 980, 920, 1050, 1100, 1150, 1160, 1256],
+                            borderColor: '#4f6ef7', backgroundColor: 'rgba(79,110,247,.1)', fill: true,
+                            tension: .4 },
+                        { label: '逾期金额(万元)', data: [120, 150, 140, 165, 175, 185, 190, 218],
+                            borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,.1)', fill: true,
+                            tension: .4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' },
+                            ticks: { callback: v => v + '万' } } } }
+            });
+
+            // ===== TAB 7 外贸 =====
+            new Chart(document.getElementById('c7_revPie'), {
+                type: 'doughnut',
+                data: { labels: ['亚马逊北美', '亚马逊欧洲', '独立站Shopify', '速卖通'], datasets: [{ data: [380, 185, 200, 15],
+                        backgroundColor: ['#f59e0b', '#4f6ef7', '#10b981', '#94a3b8'] }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '45%', plugins: { legend: { position: 'right',
+                            labels: { font: { size: 10 } } } } }
+            });
+
+            new Chart(document.getElementById('c7_country'), {
+                type: 'bar',
+                data: { labels: ['美国', '德国', '英国', '法国', '俄罗斯', '巴西', '其他'], datasets: [{ data: [450, 85, 65,
+                            35, 10, 5, 130
+                        ], backgroundColor: 'rgba(79,110,247,.6)', borderRadius: 3 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' }, ticks: { callback: v =>
+                                v + '万' } } } }
+            });
+
+            new Chart(document.getElementById('c7_cost'), {
+                type: 'doughnut',
+                data: { labels: ['商品成本', '关税', 'FBA/海外仓', '广告费', '国际快递', '平台佣金', '汇兑损失'], datasets: [{ data: [
+                            364, 42, 45, 90, 21, 57, 12
+                        ], backgroundColor: ['#ef4444', '#f59e0b', '#06b6d4', '#8b5cf6', '#3b82f6', '#ec4899',
+                            '#94a3b8'
+                        ] }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '45%', plugins: { legend: { position: 'right',
+                            labels: { font: { size: 10 } } } } }
+            });
+
+            new Chart(document.getElementById('c7_fx'), {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [
+                        { label: 'USD/CNY汇率', data: [7.12, 7.10, 7.05, 7.08, 7.15, 7.22],
+                            borderColor: '#f59e0b', tension: .4, yAxisID: 'y', borderWidth: 2 },
+                        { label: '汇兑损益(千元)', data: [-2, 0, -1, 1, -4, -6], borderColor: '#ef4444',
+                            tension: .4, yAxisID: 'y1', fill: false }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { position: 'left',
+                            grid: { color: '#f1f5f9' }, title: { display: true, text: 'USD/CNY' } },
+                        y1: { position: 'right', grid: { display: false }, title: { display: true,
+                                text: '损益(千元)' } } } }
+            });
+
+            // ===== TAB 8 供应链 =====
+            new Chart(document.getElementById('c8_procureTrend'), {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [
+                        { label: '采购额(万元)', data: [420, 450, 480, 510, 540, 580], borderColor: '#4f6ef7',
+                            backgroundColor: 'rgba(79,110,247,.08)', fill: true, tension: .4, yAxisID: 'y' },
+                        { label: '采购均价同比', data: [2.1, 2.3, 1.8, 2.0, 2.5, 3.1], borderColor: '#ef4444',
+                            tension: .4, yAxisID: 'y1', borderDash: [4, 3] }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { position: 'left',
+                            grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '万' } }, y1: { position: 'right',
+                            grid: { display: false }, ticks: { callback: v => v + '%' } } } }
+            });
+
+            new Chart(document.getElementById('c8_invTurn'), {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [
+                        { label: '库存周转天数', data: [45, 44, 42, 41, 39, 38], borderColor: '#f59e0b',
+                            tension: .4, yAxisID: 'y' },
+                        { label: '缺货率(%)', data: [5.2, 5.0, 4.8, 4.6, 4.3, 4.2], borderColor: '#ef4444',
+                            tension: .4, yAxisID: 'y1', borderDash: [4, 3] }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { position: 'left',
+                            grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '天' } }, y1: { position: 'right',
+                            grid: { display: false }, ticks: { callback: v => v + '%' } } } }
+            });
+
+            new Chart(document.getElementById('c8_supplier'), {
+                type: 'bar',
+                data: {
+                    labels: ['欣荣服饰', '美妆供应链', '食品集团', '数码科技', '家居用品厂', '跨境供应链'],
+                    datasets: [{ label: '采购额(万元)', data: [1280, 890, 620, 550, 380, 320],
+                        backgroundColor: ['#4f6ef7', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899'],
+                        borderRadius: 4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 30 } },
+                        y: { grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '万' } } } }
+            });
+
+            // ===== TAB 9 现金流 =====
+            new Chart(document.getElementById('c9_cfStruct'), {
+                type: 'bar',
+                data: {
+                    labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                    datasets: [
+                        { label: '经营现金流', data: [320, 380, 420, 512], backgroundColor: 'rgba(16,185,129,.7)',
+                            borderRadius: 3 },
+                        { label: '投资现金流', data: [-180, -150, -200, -186], backgroundColor: 'rgba(239,68,68,.5)',
+                            borderRadius: 3 },
+                        { label: '筹资现金流', data: [50, -20, -30, -42], backgroundColor: 'rgba(245,158,11,.5)',
+                            borderRadius: 3 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' },
+                            ticks: { callback: v => v + '万' } } } }
+            });
+
+            new Chart(document.getElementById('c9_cfTrend'), {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月'],
+                    datasets: [
+                        { label: '实际现金流', data: [85, 72, 108, 95, 112, 130, 135, 148, 155],
+                            borderColor: '#4f6ef7', backgroundColor: 'rgba(79,110,247,.08)', fill: true,
+                            tension: .4, pointRadius: 4 },
+                        { label: '预测现金流', data: [null, null, null, null, null, null, 140, 152, 160],
+                            borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.08)', fill: true,
+                            tension: .4, pointRadius: 4, borderDash: [6, 3] }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' },
+                            ticks: { callback: v => v + '万' } } } }
+            });
+
+            // ===== TAB 10 用户分析 =====
+            new Chart(document.getElementById('c10_rfm'), {
+                type: 'bar',
+                data: {
+                    labels: ['高价值用户', '中价值用户', '普通用户', '沉睡用户'],
+                    datasets: [
+                        { label: '人数(万)', data: [8.2, 32.5, 56.8, 88.5],
+                            backgroundColor: ['#ef4444', '#f59e0b', '#10b981', '#94a3b8'], borderRadius: 4 },
+                        { label: 'LTV(元)', data: [8200, 3850, 1620, 420], type: 'line', borderColor: '#4f6ef7',
+                            borderWidth: 2, pointRadius: 4, yAxisID: 'y1' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { position: 'left',
+                            grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '万' } }, y1: { position: 'right',
+                            grid: { display: false }, ticks: { callback: v => '¥' + v } } } }
+            });
+
+            new Chart(document.getElementById('c10_repeat'), {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [
+                        { label: '复购率', data: [36.2, 36.8, 37.2, 37.5, 38.0, 38.6], borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245,158,11,.08)', fill: true, tension: .4, pointRadius: 4 },
+                        { label: '行业基准', data: [35, 35, 35, 35, 35, 35], borderColor: '#94a3b8',
+                            borderDash: [6, 3], pointRadius: 2, fill: false }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' },
+                            ticks: { callback: v => v + '%' } } } }
+            });
+
+            // 转化漏斗
+            new Chart(document.getElementById('c10_funnel'), {
+                type: 'bar',
+                data: {
+                    labels: ['访问', '浏览', '加购', '下单', '支付', '复购'],
+                    datasets: [{
+                        data: [100, 65, 42, 28, 22, 8.5],
+                        backgroundColor: ['#4f6ef7', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b',
+                            '#ef4444'
+                        ],
+                        borderRadius: 4,
+                        barPercentage: .6
+                    }]
+                },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false },
+                        tooltip: { callbacks: { label: ctx => ctx.raw + '%' } } }, scales: { x: { grid: { color: '#f1f5f9' },
+                            ticks: { callback: v => v + '%' } }, y: { grid: { display: false } } } }
+            });
+
+            // LTV vs CAC
+            new Chart(document.getElementById('c10_ltvCac'), {
+                type: 'bar',
+                data: {
+                    labels: ['高价值', '中价值', '普通', '沉睡'],
+                    datasets: [
+                        { label: 'LTV(元)', data: [8200, 3850, 1620, 420],
+                            backgroundColor: 'rgba(79,110,247,.7)', borderRadius: 4 },
+                        { label: 'CAC(元)', data: [2800, 1200, 580, 180], backgroundColor: 'rgba(239,68,68,.6)',
+                            borderRadius: 4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top',
+                            align: 'end' } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' },
+                            ticks: { callback: v => '¥' + v } } } }
+            });
+
+            // ===== 供应商下钻 =====
+            window.drillSupplier = function(id) {
+                const data = {
+                    'A': { name: '欣荣服饰', cat: '服饰鞋包', detail: '主营：羊绒大衣、羽绒服、商务衬衫。合作3年，年采购额1280万，交货准时率97.5%。' },
+                    'B': { name: '美妆供应链', cat: '美妆个护', detail: '主营：精华液、防晒霜、面膜。合作2年，年采购额890万，次品率仅0.5%。' },
+                    'C': { name: '食品集团', cat: '食品保健', detail: '主营：坚果礼盒、蛋白粉、燕窝。合作1.5年，年采购额620万，需关注交货准时率。' },
+                    'D': { name: '数码科技', cat: '数码3C', detail: '主营：蓝牙耳机、智能手表、手机壳。合作1年，年采购额550万，次品率偏高需改善。' },
+                    'E': { name: '家居用品厂', cat: '家居日用', detail: '主营：乳胶枕、智能台灯、收纳箱。合作2.5年，年采购额380万，品质稳定。' },
+                    'F': { name: '跨境供应链', cat: '外贸出口', detail: '主营：瑜伽服、蓝牙音箱、竹纤维毛巾。合作1年，年采购额320万，需加强品控。' }
+                };
+                const d = data[id];
+                if (!d) return;
+                let h =
+                    `<div style="margin-bottom:16px"><strong>🏭 ${d.name}</strong> | ${d.cat}</div>
+                <p style="font-size:13px;color:var(--sub);margin-bottom:12px">${d.detail}</p>
+                <div style="background:#f8fafc;border-radius:8px;padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+                    <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:#4f6ef7">${d.cat}</div><div style="font-size:11px;color:var(--muted)">品类</div></div>
+                    <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:#10b981">A</div><div style="font-size:11px;color:var(--muted)">评级</div></div>
+                    <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:#f59e0b">${Math.floor(Math.random()*30+70)}%</div><div style="font-size:11px;color:var(--muted)">综合评分</div></div>
+                </div>`;
+                document.getElementById('modalTitle').textContent = `🏭 供应商详情: ${d.name}`;
+                document.getElementById('modalBody').innerHTML = h;
+                document.getElementById('drillModal').classList.add('show');
+            };
+
+            // ===== 点击品类卡片下钻 =====
+            document.querySelectorAll('.progRow .progLbl').forEach((el, idx) => {
+                el.parentElement.style.cursor = 'pointer';
+                el.parentElement.onclick = function() {
+                    const cats = ['服饰鞋包', '美妆个护', '食品保健', '数码3C', '家居日用', '外贸出口'];
+                    const cat = cats[idx] || '服饰鞋包';
+                    document.querySelector('[data-tab="tab2"]').click();
+                    setTimeout(() => {
+                        document.querySelectorAll('#catFilters .fBtn').forEach(b => {
+                            if (b.dataset.cat === cat) { b.click(); }
+                        });
+                    }, 100);
+                };
+            });
+
+        } catch (e) {
+            console.error('图表初始化失败:', e.message);
+            document.querySelectorAll('.chBody,.chBodyS,.chBodyL,.chBodyXL').forEach(el => {
+                el.innerHTML =
+                    '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px">⚠️ 图表加载失败，请刷新页面</div>';
+            });
+        }
+
+        // ===== 周期切换 =====
+        document.querySelectorAll('.perBtn').forEach(b => {
+            b.onclick = function() {
+                document.querySelectorAll('.perBtn').forEach(x => x.classList.remove('active'));
+                this.classList.add('active');
+            };
+        });
+
+        // 窗口resize自适应
+        window.addEventListener('resize', () => {
+            Chart.instances.forEach(chart => chart.resize());
+        });
+        console.log('✅ 电商财务分析看板 · 旗舰增强版 已加载完毕');
+        console.log('📊 包含10大分析模块，支持多维度下钻');
+    </script>
+</body>
+</html>
