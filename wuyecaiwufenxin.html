@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物业财务分析看板</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --bg:#eef2f7; --card:#ffffff; --ink:#1f2a44; --sub:#6b7a99;
+    --line:#e3e9f2; --pri:#2f6fed; --pri2:#1aae8f; --warn:#f5a623;
+    --red:#e15555; --gold:#d4a017; --purple:#7c5cff; --teal:#18b7be;
+    --shadow:0 2px 10px rgba(31,42,68,.06);
+  }
+  body{ font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:var(--ink); }
+  .topbar{ position:sticky; top:0; z-index:40; background:linear-gradient(100deg,#1f3a6b,#2f6fed); color:#fff; padding:14px 28px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 12px rgba(31,58,107,.25); flex-wrap:wrap; gap:12px;}
+  .topbar h1{ font-size:20px; font-weight:700; letter-spacing:1px; display:flex; align-items:center; gap:10px;}
+  .topbar h1 .dot{ width:10px;height:10px;border-radius:50%;background:#5be3b0;box-shadow:0 0 8px #5be3b0;}
+  .filters{ display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .filters select,.filters .btn{ background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.28); color:#fff; padding:7px 12px; border-radius:8px; font-size:13px; cursor:pointer; outline:none;}
+  .filters select option{ color:#1f2a44;}
+  .filters .btn.on{ background:#fff; color:#2f6fed; font-weight:600;}
+  .wrap{ max-width:1480px; margin:0 auto; padding:18px 22px 40px;}
+  .kpi-row{ display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin-bottom:18px;}
+  .kpi{ background:var(--card); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow); border:1px solid var(--line); position:relative; overflow:hidden;}
+  .kpi::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; }
+  .kpi.k1::before{background:var(--pri);} .kpi.k2::before{background:var(--pri2);} .kpi.k3::before{background:var(--warn);}
+  .kpi.k4::before{background:var(--red);} .kpi.k5::before{background:var(--purple);} .kpi.k6::before{background:var(--teal);}
+  .kpi .lab{ font-size:12px; color:var(--sub); margin-bottom:6px;}
+  .kpi .val{ font-size:22px; font-weight:700; }
+  .kpi .sub2{ font-size:12px; color:var(--sub); margin-top:4px;}
+  .kpi .up{color:var(--pri2);} .kpi .down{color:var(--red);}
+  .section{ background:var(--card); border-radius:14px; box-shadow:var(--shadow); border:1px solid var(--line); margin-bottom:18px; overflow:hidden;}
+  .sec-head{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line); flex-wrap:wrap; gap:10px;}
+  .sec-head h2{ font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px;}
+  .sec-head h2 i{ width:6px;height:18px;border-radius:3px;background:var(--pri); display:inline-block;}
+  .sec-head .tag{ font-size:12px; color:var(--sub); background:#f1f5fb; padding:4px 10px; border-radius:20px;}
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:0;}
+  .grid2 > div{ padding:14px 20px;}
+  .grid2 > div + div{ border-left:1px solid var(--line);}
+  .grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:0;}
+  .grid3 > div{ padding:14px 20px;}
+  .grid3 > div + div{ border-left:1px solid var(--line);}
+  .full{ padding:14px 20px;}
+  .chart{ width:100%; height:320px;}
+  .chart.sm{ height:280px;}
+  .chart.lg{ height:360px;}
+  table{ width:100%; border-collapse:collapse; font-size:13px;}
+  th,td{ padding:9px 12px; text-align:right; border-bottom:1px solid var(--line);}
+  th:first-child,td:first-child{ text-align:left;}
+  th{ background:#f6f9fd; color:var(--sub); font-weight:600;}
+  tbody tr:hover{ background:#f6f9fd;}
+  tbody tr{ cursor:pointer;}
+  .tag-cell{ display:inline-block; padding:2px 8px; border-radius:10px; font-size:12px;}
+  .ok{ background:#e6f7f1; color:#0f9b7c;} .mid{ background:#fff4e0; color:#c47f00;} .bad{ background:#fdeaea; color:#c0392b;}
+  .modal-mask{ display:none; position:fixed; inset:0; background:rgba(20,30,55,.55); z-index:80; justify-content:center; align-items:flex-start; padding:40px 20px; overflow:auto;}
+  .modal-mask.show{ display:flex;}
+  .modal{ background:#fff; border-radius:16px; width:100%; max-width:1200px; box-shadow:0 20px 60px rgba(0,0,0,.25); overflow:hidden;}
+  .modal-head{ display:flex; justify-content:space-between; align-items:center; padding:18px 24px; background:linear-gradient(100deg,#1f3a6b,#2f6fed); color:#fff;}
+  .modal-head h3{ font-size:18px;}
+  .modal-head .close{ background:rgba(255,255,255,.2); border:none; color:#fff; width:32px;height:32px;border-radius:8px; cursor:pointer; font-size:18px;}
+  .modal-body{ padding:20px 24px;}
+  .modal-body .chart{height:300px;}
+  .tips{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; padding:8px 20px 18px;}
+  .tip{ background:#f6f9fd; border-left:3px solid var(--pri2); border-radius:8px; padding:12px 14px;}
+  .tip h4{ font-size:13px; margin-bottom:4px; color:var(--pri);}
+  .tip p{ font-size:12px; color:var(--sub); line-height:1.6;}
+  .bar-wrap{ display:flex; align-items:center; gap:10px; padding:5px 0;}
+  .bar-wrap .nm{ width:100px; font-size:12px; color:var(--sub);}
+  .bar{ flex:1; height:18px; background:#eef2f7; border-radius:9px; overflow:hidden;}
+  .bar i{ display:block; height:100%; border-radius:9px;}
+  .bar-wrap .vv{ width:80px; text-align:right; font-size:12px; font-weight:600;}
+  .cat-badge{ display:inline-block; font-size:11px; padding:1px 7px; border-radius:8px; margin-left:6px;}
+  .cat-biz{background:#e6f0ff;color:#2f6fed;} .cat-pub{background:#f0eaff;color:#7c5cff;} .cat-trust{background:#fff4e0;color:#c47f00;} .cat-pass{background:#e6f7f1;color:#0f9b7c;}
+  .note{ font-size:12px; color:var(--sub); padding:2px 0 8px; line-height:1.6;}
+  @media(max-width:1100px){
+    .kpi-row{grid-template-columns:repeat(3,1fr);}
+    .grid2,.grid3{grid-template-columns:1fr;}
+    .grid2 > div + div,.grid3 > div + div{ border-left:none; border-top:1px solid var(--line);}
+    .tips{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1><span class="dot"></span>物业财务分析看板 · 住宅小区</h1>
+  <div class="filters">
+    <select id="fMonth">
+      <option value="all">全部月份</option>
+      <option value="0">2026年1月</option><option value="1">2026年2月</option>
+      <option value="2">2026年3月</option><option value="3">2026年4月</option>
+      <option value="4">2026年5月</option><option value="5" selected>2026年6月</option>
+    </select>
+    <select id="fComm">
+      <option value="all">全部小区</option>
+      <option value="0">A小区</option>
+      <option value="1">B小区</option>
+    </select>
+    <button class="btn on" id="btnIncome">收入</button>
+    <button class="btn" id="btnOccupy">出租率</button>
+    <button class="btn" id="btnCollect">收款</button>
+    <button class="btn" id="btnCost">成本</button>
+    <button class="btn" id="btnPublic">公共收益</button>
+    <button class="btn" id="btnTax">税务</button>
+    <button class="btn" id="btnProfit">利润</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <!-- 收入板块 -->
+  <div class="section" data-sec="income">
+    <div class="sec-head"><h2><i></i>收入构成与趋势分析</h2><span class="tag">10项收费 · A/B两小区 · 3,300户</span></div>
+    <div class="note" style="padding:8px 20px 0;">收入按性质分四类：<span class="cat-badge cat-biz">经营收入</span>物业费/车位/垃圾清运/商铺租金/充电桩/房屋租金　<span class="cat-badge cat-pass">代收代付</span>水电费(过手不计入公司收入)　<span class="cat-badge cat-trust">暂收款</span>装修押金(退还前不确认收入)　<span class="cat-badge cat-pub">公共收益</span>电梯广告/场地租赁</div>
+    <div class="grid3">
+      <div><div id="cRevPie" class="chart"></div></div>
+      <div><div id="cRevCat" class="chart"></div></div>
+      <div><div id="cRevTrend" class="chart"></div></div>
+    </div>
+    <div class="full"><div id="cCommCompare" class="chart"></div></div>
+  </div>
+
+  <!-- 出租率 -->
+  <div class="section" data-sec="occupy">
+    <div class="sec-head"><h2><i style="background:var(--pri2)"></i>出租率 / 空置率分析</h2><span class="tag">住宅·商铺·车位 三类资产</span></div>
+    <div class="grid2">
+      <div><div id="cOccupy" class="chart"></div></div>
+      <div>
+        <div style="padding:8px 0 4px;font-size:13px;color:var(--sub);font-weight:600;">各小区资产出租率明细（最新月）</div>
+        <div id="occBars"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 收款 -->
+  <div class="section" data-sec="collect">
+    <div class="sec-head"><h2><i style="background:var(--warn)"></i>收款情况与欠费分析</h2><span class="tag">应收 · 实收 · 收缴率 · 账龄</span></div>
+    <div class="grid3">
+      <div><div id="cCollectGauge" class="chart sm"></div></div>
+      <div><div id="cAging" class="chart sm"></div></div>
+      <div><div id="cCollectTrend" class="chart sm"></div></div>
+    </div>
+    <div class="grid2">
+      <div>
+        <div style="padding:4px 0 8px;font-size:13px;color:var(--sub);font-weight:600;">收款方式分布</div>
+        <div id="payBars"></div>
+      </div>
+      <div>
+        <div style="padding:4px 0 8px;font-size:13px;color:var(--sub);font-weight:600;">欠费TOP5业主（模拟）</div>
+        <table><thead><tr><th>业主房号</th><th>小区</th><th>欠费金额</th><th>欠费月数</th></tr></thead>
+        <tbody id="topArrears"></tbody></table>
+      </div>
+    </div>
+    <div class="full">
+      <div style="padding:4px 0 8px;font-size:13px;color:var(--sub);font-weight:600;">欠费明细（点击行可下钻查看该收费项目两小区月度趋势与收缴率）</div>
+      <div style="max-height:300px;overflow:auto">
+      <table id="tblArrears">
+        <thead><tr><th>收费项目</th><th>类别</th><th>应收(万元)</th><th>实收(万元)</th><th>欠费(万元)</th><th>收缴率</th><th>欠费户数</th><th>状态</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 成本 -->
+  <div class="section" data-sec="cost">
+    <div class="sec-head"><h2><i style="background:var(--red)"></i>成本费用分析</h2><span class="tag">人工费用 · 管理费用（不含工资）· 人效</span></div>
+    <div class="note" style="padding:8px 20px 0;">说明：工资薪酬全部归入<strong>人工费用</strong>单独核算；<strong>管理费用</strong>仅含日常运营支出（办公、水电、维保、材料、保险、折旧等），不含任何人员工资。</div>
+    <div class="grid2">
+      <div><div id="cCostPie" class="chart"></div></div>
+      <div><div id="cCostTrend" class="chart"></div></div>
+    </div>
+    <div class="full">
+      <div style="padding:4px 0 8px;font-size:13px;color:var(--sub);font-weight:600;">人工费用明细（按岗位 · 月度）</div>
+      <table id="tblLabor">
+        <thead><tr><th>岗位</th><th>A小区人数</th><th>B小区人数</th><th>合计人数</th><th>人均月薪(元)</th><th>工资(万元)</th><th>社保公积金(万元)</th><th>福利加班工装(万元)</th><th>小计(万元)</th><th>占人工</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="full">
+      <div style="padding:4px 0 8px;font-size:13px;color:var(--sub);font-weight:600;">管理费用明细（纯运营支出 · 不含工资）</div>
+      <div id="mgmtBars"></div>
+    </div>
+    <div class="full">
+      <div style="padding:4px 0 8px;font-size:13px;color:var(--sub);font-weight:600;">设施设备维保费用细分</div>
+      <div id="maintBars"></div>
+    </div>
+    <div class="full">
+      <div style="padding:4px 0 8px;font-size:13px;color:var(--sub);font-weight:600;">人效分析</div>
+      <div id="effBars"></div>
+    </div>
+  </div>
+
+  <!-- 公共收益 -->
+  <div class="section" data-sec="public">
+    <div class="sec-head"><h2><i style="background:var(--purple)"></i>公共收益分析</h2><span class="tag">电梯广告 · 场地租赁 · 业主分成</span></div>
+    <div class="note" style="padding:8px 20px 0;">公共收益利用小区公共区域（电梯轿厢、公共场地等）开展经营活动所得，依法归全体业主所有，物业按约定比例提取经营管理费。</div>
+    <div class="grid2">
+      <div><div id="cPublicPie" class="chart"></div></div>
+      <div><div id="cPublicTrend" class="chart"></div></div>
+    </div>
+    <div class="full">
+      <div style="padding:4px 0 8px;font-size:13px;color:var(--sub);font-weight:600;">公共收益分配（最新月）</div>
+      <div id="publicSplit"></div>
+    </div>
+  </div>
+
+  <!-- 税务 -->
+  <div class="section" data-sec="tax">
+    <div class="sec-head"><h2><i style="background:var(--purple)"></i>税务筹划分析</h2><span class="tag">增值税 · 附加税 · 所得税 · 房产税 · 印花税</span></div>
+    <div class="grid2">
+      <div><div id="cTaxPie" class="chart"></div></div>
+      <div><div id="cTaxTrend" class="chart"></div></div>
+    </div>
+    <div class="full">
+      <div style="padding:4px 0 8px;font-size:13px;color:var(--sub);font-weight:600;">各收入项目适用税率及税额测算</div>
+      <table id="tblTax">
+        <thead><tr><th>收入项目</th><th>收入类别</th><th>计税收入(万元)</th><th>适用税目</th><th>税率</th><th>应纳税额(万元)</th><th>说明</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="tips">
+      <div class="tip"><h4>① 代收代付水电费不计税</h4><p>代收代付水电费约50万元/月属代收性质，不计入增值税应税收入，可降低销项税额约3万元/月。需确保票据分开、专户管理、收支两条线。</p></div>
+      <div class="tip"><h4>② 装修押金不确认收入</h4><p>装修押金为暂收款项，退还前不确认收入、不计税，减少当期税负。需逐户台账登记，超期未退再按规定处理。</p></div>
+      <div class="tip"><h4>③ 小规模vs一般纳税人测算</h4><p>当前应税收入约147万/月（年化约1,760万），超一般纳税人标准。建议对充电桩、小额场地租赁等业务单独设立小规模主体，享受3%征收率。</p></div>
+      <div class="tip"><h4>④ 房产税从租从价对比</h4><p>自持商铺房产税可对比从价（1.2%）与从租（12%）计征。空置商铺从价计征税负更低，应及时申报空置状态降低税负。</p></div>
+      <div class="tip"><h4>⑤ 进项税抵扣管理</h4><p>电梯维保、设备维修、安保器材、办公采购等进项发票需规范取得，预计可抵扣进项税约2.8万/月，降低实际税负。</p></div>
+      <div class="tip"><h4>⑥ 公共收益税务处理</h4><p>电梯广告、场地租赁等公共收益代管部分（归业主）不计入物业收入；物业提取的经营管理费按6%计增值税。需严格区分代管与自营。</p></div>
+    </div>
+  </div>
+
+  <!-- 利润 -->
+  <div class="section" data-sec="profit">
+    <div class="sec-head"><h2><i style="background:var(--teal)"></i>利润分析</h2><span class="tag">经营收入 · 成本 · 税费 · 净利润</span></div>
+    <div class="grid2">
+      <div><div id="cProfitWaterfall" class="chart"></div></div>
+      <div><div id="cProfitTrend" class="chart"></div></div>
+    </div>
+    <div class="full">
+      <div style="padding:4px 0 8px;font-size:13px;color:var(--sub);font-weight:600;">分小区盈利对比（最新月）</div>
+      <div id="profitBars"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-mask" id="modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="mTitle">下钻详情</h3>
+      <button class="close" id="mClose">×</button>
+    </div>
+    <div class="modal-body" id="mBody"></div>
+  </div>
+</div>
+
+<script>
+/* ============ 基础数据 ============ */
+const MONTHS=['1月','2月','3月','4月','5月','6月'];
+const COMM=[
+  {name:'A小区',households:1820,shops:32,parking:680,area:18.2,built:2015,fee:2.2,elevators:30},
+  {name:'B小区',households:1480,shops:18,parking:520,area:15.8,built:2019,fee:2.5,elevators:24}
+];
+// 收入项目 key, name, color, 类别(biz经营/pass代收/trust暂收/pub公共收益)
+const REV_ITEMS=[
+  {key:'property',name:'物业费',color:'#2f6fed',cat:'biz'},
+  {key:'utility',name:'代收代付水电费',color:'#18b7be',cat:'pass'},
+  {key:'garbage',name:'垃圾清运费',color:'#7c8a9c',cat:'biz'},
+  {key:'parking',name:'车位管理费',color:'#1aae8f',cat:'biz'},
+  {key:'deposit',name:'装修押金',color:'#d4a017',cat:'trust'},
+  {key:'shopRent',name:'商铺租金',color:'#e15555',cat:'biz'},
+  {key:'elevatorAd',name:'电梯广告收入',color:'#7c5cff',cat:'pub'},
+  {key:'charging',name:'充电桩电费',color:'#f5a623',cat:'biz'},
+  {key:'houseRent',name:'房屋租金',color:'#0ea5e9',cat:'biz'},
+  {key:'venueRent',name:'场地租赁收入',color:'#d96fb0',cat:'pub'}
+];
+const CAT_NAME={biz:'经营收入',pass:'代收代付',trust:'暂收款',pub:'公共收益'};
+const CAT_COLOR={biz:'#2f6fed',pass:'#18b7be',trust:'#d4a017',pub:'#7c5cff'};
+const CAT_BADGE={biz:'cat-biz',pass:'cat-pass',trust:'cat-trust',pub:'cat-pub'};
+
+// 6个月数据 [A小区, B小区] 单位万元
+const REV={
+  property:[[40.0,39.8,41.0,41.3,41.6,41.8],[39.5,39.6,39.7,39.8,39.9,40.0]],
+  utility:[[26.5,25.8,27.2,28.0,28.1,27.8],[22.8,22.2,23.5,23.9,24.0,23.7]],
+  garbage:[[5.5,5.5,5.5,5.5,5.5,5.5],[4.4,4.4,4.4,4.4,4.4,4.4]],
+  parking:[[5.4,5.4,5.4,5.4,5.4,5.4],[4.2,4.2,4.2,4.2,4.2,4.2]],
+  deposit:[[2.5,3.0,3.8,3.2,2.8,3.2],[1.5,1.8,2.4,2.0,1.7,2.0]],
+  shopRent:[[12.8,12.8,12.8,12.8,12.8,12.8],[8.1,8.1,8.1,8.1,8.1,8.1]],
+  elevatorAd:[[2.4,2.4,2.5,2.5,2.6,2.6],[2.2,2.2,2.2,2.3,2.3,2.3]],
+  charging:[[2.4,2.5,2.6,2.7,2.7,2.8],[2.7,2.8,2.9,3.0,3.0,3.1]],
+  houseRent:[[7.8,7.8,8.0,8.1,8.2,8.2],[5.8,5.9,5.9,6.0,6.0,6.0]],
+  venueRent:[[1.8,1.8,1.9,1.9,2.0,2.0],[1.2,1.2,1.2,1.3,1.3,1.3]]
+};
+// 收缴率 by项目 by月 [A,B]
+const COLLECT={
+  property:[[.935,.938,.942,.948,.952,.955],[.928,.93,.935,.94,.945,.948]],
+  utility:[[.99,.99,.995,.995,.995,.998],[.985,.988,.99,.992,.993,.995]],
+  garbage:[[.90,.905,.91,.915,.92,.925],[.88,.89,.895,.90,.905,.91]],
+  parking:[[.92,.925,.93,.935,.94,.945],[.90,.905,.91,.915,.92,.925]],
+  deposit:[[1,1,1,1,1,1],[1,1,1,1,1,1]],
+  shopRent:[[.96,.965,.97,.975,.98,.985],[.94,.945,.95,.955,.96,.965]],
+  elevatorAd:[[1,1,1,1,1,1],[1,1,1,1,1,1]],
+  charging:[[.97,.975,.98,.98,.985,.99],[.96,.965,.97,.975,.98,.985]],
+  houseRent:[[.95,.955,.96,.965,.97,.975],[.93,.935,.94,.945,.95,.955]],
+  venueRent:[[1,1,1,1,1,1],[1,1,1,1,1,1]]
+};
+// 出租率 by月 [A,B] 住宅/商铺/车位
+const OCCUPANCY={
+  house:[[.965,.968,.97,.972,.975,.978],[.952,.955,.958,.96,.963,.966]],
+  shop:[[.938,.944,.95,.956,.969,.969],[.944,.95,.956,.961,.967,.967]],
+  parking:[[.882,.89,.897,.905,.912,.919],[.865,.875,.884,.893,.902,.912]]
+};
+// 收款方式
+const PAY_WAY=[{name:'银行转账',v:46,color:'#2f6fed'},{name:'微信支付',v:24,color:'#1aae8f'},{name:'支付宝',v:18,color:'#18b7be'},{name:'POS刷卡',v:8,color:'#f5a623'},{name:'现金',v:4,color:'#7c8a9c'}];
+// 人工 月度6个月 [合计工资,社保,福利加班工装]
+const LABOR_MONTH=[
+  {wage:35.12,social:10.54,welfare:4.7},
+  {wage:35.12,social:10.54,welfare:4.8},
+  {wage:35.30,social:10.59,welfare:5.2},
+  {wage:35.48,social:10.64,welfare:5.0},
+  {wage:35.66,social:10.70,welfare:4.9},
+  {wage:35.66,social:10.70,welfare:5.1}
+];
+// 人工明细
+const LABOR_DETAIL=[
+  {post:'项目管理(经理/客服/财务)',aCnt:4,bCnt:2,salary:8000,socialRate:.30,welfare:0.6},
+  {post:'秩序维护员(保安)',aCnt:16,bCnt:12,salary:5200,socialRate:.30,welfare:1.2},
+  {post:'保洁员',aCnt:14,bCnt:10,salary:4000,socialRate:.30,welfare:0.8},
+  {post:'维修工',aCnt:5,bCnt:3,salary:5800,socialRate:.30,welfare:0.5},
+  {post:'绿化养护',aCnt:3,bCnt:1,salary:3800,socialRate:.30,welfare:0.3}
+];
+// 管理费用（纯运营支出，无工资）月度
+const MGMT_FEE=[
+  {name:'公共区域水电费',v:8.5,color:'#f5a623'},
+  {name:'设备维修费',v:4.2,color:'#e15555'},
+  {name:'垃圾清运费(付环卫)',v:4.5,color:'#7c8a9c'},
+  {name:'电梯维保费',v:3.6,color:'#7c5cff'},
+  {name:'绿化养护费',v:3.2,color:'#1aae8f'},
+  {name:'清洁保洁材料费',v:2.5,color:'#18b7be'},
+  {name:'消防设施维保费',v:1.8,color:'#0ea5e9'},
+  {name:'办公设备折旧',v:1.8,color:'#a0aec0'},
+  {name:'监控安防维保费',v:1.5,color:'#2f6fed'},
+  {name:'保险费',v:1.2,color:'#d96fb0'},
+  {name:'办公费',v:1.5,color:'#6b7a99'},
+  {name:'差旅交通费',v:0.8,color:'#d4a017'},
+  {name:'低值易耗品',v:0.6,color:'#0f9b7c'},
+  {name:'其他',v:1.0,color:'#cbd5e0'}
+];
+// 税务 月度
+const TAX_DETAIL=[
+  {name:'增值税',v:9.96,color:'#2f6fed'},
+  {name:'企业所得税',v:4.50,color:'#7c5cff'},
+  {name:'房产税',v:2.50,color:'#e15555'},
+  {name:'城建税及附加',v:1.20,color:'#18b7be'},
+  {name:'土地使用税',v:0.45,color:'#1aae8f'},
+  {name:'印花税',v:0.30,color:'#f5a623'}
+];
+// 公共收益分配比例 物业管理费30% / 业主70%
+const PUB_SPLIT={mgmt:0.30,owner:0.70};
+
+/* ============ 工具 ============ */
+const fmt=w=>w.toFixed(1);
+function revTotal(m,ci){let s=0;REV_ITEMS.forEach(it=>s+=REV[it.key][ci][m]);return s;}
+function revByCat(m,ci,cat){let s=0;REV_ITEMS.filter(it=>it.cat===cat).forEach(it=>s+=REV[it.key][ci][m]);return s;}
+function collectTotal(m,ci){let s=0;REV_ITEMS.forEach(it=>s+=REV[it.key][ci][m]*COLLECT[it.key][ci][m]);return s;}
+function shouldTotal(m,ci){return revTotal(m,ci);}
+
+let curMonth=5, curComm='all';
+let charts={};
+const commList=()=>curComm==='all'?[0,1]:[+curComm];
+const ratio=()=>curComm==='all'?1:COMM[+curComm].households/3300;
+
+/* ============ KPI ============ */
+function renderKPI(){
+  const m=curMonth, cl=commList();
+  let income=0,should=0,collected=0,utility=0,pub=0;
+  cl.forEach(ci=>{income+=revTotal(m,ci);should+=shouldTotal(m,ci);collected+=collectTotal(m,ci);utility+=REV.utility[ci][m];pub+=revByCat(m,ci,'pub');});
+  const realIncome=income-utility; // 剔除代收
+  const collectRate=should?collected/should*100:0;
+  // 成本
+  let labor=LABOR_MONTH[m].wage+LABOR_MONTH[m].social+LABOR_MONTH[m].welfare; labor*=ratio();
+  const mgmt=MGMT_FEE.reduce((s,x)=>s+x.v,0)*ratio();
+  const totalCost=labor+mgmt;
+  // 税
+  const tax=TAX_DETAIL.reduce((s,x)=>s+x.v,0)*ratio();
+  const profit=realIncome-totalCost-tax;
+  const profitRate=realIncome?profit/realIncome*100:0;
+  // 出租率
+  let occ=0; cl.forEach(ci=>occ+=OCCUPANCY.house[ci][m]); occ=occ/cl.length*100;
+  const pm=m>0?m-1:m; let prevIncome=0; cl.forEach(ci=>prevIncome+=revTotal(pm,ci));
+  const chg=income-prevIncome;
+  const households=curComm==='all'?3300:COMM[+curComm].households;
+  const data=[
+    {cls:'k1',lab:'当月总收入(含代收)',val:'¥'+fmt(income)+'万',sub:`环比 ${chg>=0?'↑':'↓'} ${fmt(Math.abs(chg))}万 · 经营收入¥${fmt(realIncome)}万`,up:chg>=0},
+    {cls:'k2',lab:'当月实收',val:'¥'+fmt(collected)+'万',sub:`综合收缴率 ${collectRate.toFixed(1)}%`,up:true},
+    {cls:'k3',lab:'当月总成本',val:'¥'+fmt(totalCost)+'万',sub:`人工¥${fmt(labor)}万 · 管理费用¥${fmt(mgmt)}万`,up:false},
+    {cls:'k4',lab:'当月税费',val:'¥'+fmt(tax)+'万',sub:`综合税负率 ${(tax/realIncome*100).toFixed(1)}%`,up:false},
+    {cls:'k5',lab:'当月净利润',val:'¥'+fmt(profit)+'万',sub:`净利率 ${profitRate.toFixed(1)}%`,up:profit>0},
+    {cls:'k6',lab:'住宅出租率',val:occ.toFixed(1)+'%',sub:`在管 ${households} 户 · 公共收益¥${fmt(pub)}万`,up:true}
+  ];
+  document.getElementById('kpiRow').innerHTML=data.map(d=>`<div class="kpi ${d.cls}"><div class="lab">${d.lab}</div><div class="val">${d.val}</div><div class="sub2 ${d.up?'up':'down'}">${d.sub}</div></div>`).join('');
+}
+
+/* ============ 收入 ============ */
+function renderRevenue(){
+  const m=curMonth, cl=commList();
+  // 1. 收入构成饼图（按项目）
+  const pie=echarts.init(document.getElementById('cRevPie'));
+  pie.setOption({
+    title:{text:'收入构成（按项目）',left:'center',top:8,textStyle:{fontSize:14,color:'#6b7a99'}},
+    tooltip:{trigger:'item',formatter:'{b}<br/>¥{c}万 ({d}%)'},
+    legend:{bottom:0,type:'scroll',itemWidth:10,itemHeight:10,textStyle:{fontSize:11}},
+    series:[{type:'pie',radius:['36%','60%'],center:['50%','54%'],label:{formatter:'{b}\n{d}%',fontSize:11},labelLine:{length:8,length2:6},
+      data:REV_ITEMS.map(it=>{let v=0;cl.forEach(ci=>v+=REV[it.key][ci][m]);return {name:it.name,value:+v.toFixed(1),itemStyle:{color:it.color}};})}]
+  }); charts.rp=pie;
+  // 2. 收入分类饼图（按性质）
+  const cat=echarts.init(document.getElementById('cRevCat'));
+  const catData=['biz','pass','trust','pub'].map(c=>{let v=0;cl.forEach(ci=>v+=revByCat(m,ci,c));return {name:CAT_NAME[c],value:+v.toFixed(1),itemStyle:{color:CAT_COLOR[c]}};});
+  cat.setOption({
+    title:{text:'收入分类（按性质）',left:'center',top:8,textStyle:{fontSize:14,color:'#6b7a99'}},
+    tooltip:{trigger:'item',formatter:'{b}<br/>¥{c}万 ({d}%)'},
+    legend:{bottom:0},
+    series:[{type:'pie',radius:['36%','60%'],center:['50%','54%'],label:{formatter:'{b}\n{d}%',fontSize:11},
+      data:catData}]
+  }); charts.rc=cat;
+  // 3. 月度趋势
+  const trend=echarts.init(document.getElementById('cRevTrend'));
+  const total=MONTHS.map((_,i)=>{let s=0;cl.forEach(ci=>s+=revTotal(i,ci));return +s.toFixed(1);});
+  const real=MONTHS.map((_,i)=>{let s=0;cl.forEach(ci=>s+=revTotal(i,ci)-REV.utility[ci][i]);return +s.toFixed(1);});
+  trend.setOption({
+    title:{text:'月度收入趋势',left:'center',top:8,textStyle:{fontSize:14,color:'#6b7a99'}},
+    tooltip:{trigger:'axis',valueFormatter:v=>'¥'+v+'万'},
+    legend:{bottom:0,data:['总收入(含代收)','经营收入(剔除代收)']},
+    grid:{left:50,right:20,top:50,bottom:40},
+    xAxis:{type:'category',data:MONTHS},yAxis:{type:'value',name:'万元'},
+    series:[
+      {name:'总收入(含代收)',type:'line',smooth:true,data:total,itemStyle:{color:'#2f6fed'},areaStyle:{color:'rgba(47,111,237,.1)'},symbolSize:7},
+      {name:'经营收入(剔除代收)',type:'line',smooth:true,data:real,itemStyle:{color:'#1aae8f'},symbolSize:7}
+    ]
+  }); charts.rt=trend;
+  // 4. 小区对比
+  const cmp=echarts.init(document.getElementById('cCommCompare'));
+  const items=REV_ITEMS.map(it=>it.name);
+  const aArr=REV_ITEMS.map(it=>{let v=0;cl.includes(0)?v=REV[it.key][0][m]:0;return +v.toFixed(1);});
+  const bArr=REV_ITEMS.map(it=>{let v=0;cl.includes(1)?v=REV[it.key][1][m]:0;return +v.toFixed(1);});
+  cmp.setOption({
+    title:{text:'两小区各收费项目对比（最新月）',left:'center',top:8,textStyle:{fontSize:14,color:'#6b7a99'}},
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'},valueFormatter:v=>'¥'+v+'万'},
+    legend:{bottom:0,data:['A小区','B小区']},
+    grid:{left:60,right:20,top:50,bottom:55},
+    xAxis:{type:'category',data:items,axisLabel:{rotate:22,fontSize:11}},
+    yAxis:{type:'value',name:'万元'},
+    series:[
+      {name:'A小区',type:'bar',data:aArr,itemStyle:{color:'#2f6fed'},barGap:'10%'},
+      {name:'B小区',type:'bar',data:bArr,itemStyle:{color:'#1aae8f'}}
+    ]
+  }); charts.cmp=cmp;
+}
+
+/* ============ 出租率 ============ */
+function renderOccupy(){
+  const cl=commList(), m=curMonth;
+  const house=MONTHS.map((_,i)=>{let s=0;cl.forEach(ci=>s+=OCCUPANCY.house[ci][i]);return +(s/cl.length*100).toFixed(1);});
+  const shop=MONTHS.map((_,i)=>{let s=0;cl.forEach(ci=>s+=OCCUPANCY.shop[ci][i]);return +(s/cl.length*100).toFixed(1);});
+  const parking=MONTHS.map((_,i)=>{let s=0;cl.forEach(ci=>s+=OCCUPANCY.parking[ci][i]);return +(s/cl.length*100).toFixed(1);});
+  const ch=echarts.init(document.getElementById('cOccupy'));
+  ch.setOption({
+    title:{text:'出租率月度趋势',left:'center',top:8,textStyle:{fontSize:14,color:'#6b7a99'}},
+    tooltip:{trigger:'axis',valueFormatter:v=>v+'%'},
+    legend:{bottom:0,data:['住宅','商铺','车位']},
+    grid:{left:50,right:20,top:50,bottom:40},
+    xAxis:{type:'category',data:MONTHS},yAxis:{type:'value',max:100,axisLabel:{formatter:'{value}%'}},
+    series:[
+      {name:'住宅',type:'line',smooth:true,data:house,itemStyle:{color:'#2f6fed'},symbolSize:7},
+      {name:'商铺',type:'line',smooth:true,data:shop,itemStyle:{color:'#e15555'},symbolSize:7},
+      {name:'车位',type:'line',smooth:true,data:parking,itemStyle:{color:'#1aae8f'},symbolSize:7}
+    ]
+  }); charts.occ=ch;
+  let html='';
+  cl.forEach(ci=>{
+    const c=COMM[ci];
+    html+=`<div style="font-size:13px;font-weight:600;padding:6px 0 2px;">${c.name}（${c.households}户 · ${c.area}万㎡ · ${c.built}年交付）</div>`;
+    [['住宅',OCCUPANCY.house[ci][m]*100,'#2f6fed',c.households],['商铺',OCCUPANCY.shop[ci][m]*100,'#e15555',c.shops],['车位',OCCUPANCY.parking[ci][m]*100,'#1aae8f',c.parking]].forEach(([n,v,col,total])=>{
+      const vacant=Math.round((1-v/100)*total);
+      html+=`<div class="bar-wrap"><div class="nm">${n}</div><div class="bar"><i style="width:${v}%;background:${col}"></i></div><div class="vv">${v.toFixed(1)}%（空${vacant}）</div></div>`;
+    });
+  });
+  document.getElementById('occBars').innerHTML=html;
+}
+
+/* ============ 收款 ============ */
+function renderCollect(){
+  const m=curMonth, cl=commList();
+  let should=0,collected=0; cl.forEach(ci=>{should+=shouldTotal(m,ci);collected+=collectTotal(m,ci);});
+  const rate=should?collected/should*100:0;
+  const g=echarts.init(document.getElementById('cCollectGauge'));
+  g.setOption({
+    title:{text:'综合收缴率',left:'center',top:8,textStyle:{fontSize:14,color:'#6b7a99'}},
+    series:[{type:'gauge',center:['50%','60%'],radius:'72%',min:80,max:100,
+      axisLine:{lineStyle:{width:16,color:[[.9,'#e15555'],[.96,'#f5a623'],[1,'#1aae8f']]}},
+      pointer:{width:5},detail:{formatter:'{value}%',fontSize:22,offsetCenter:[0,'32%'],color:'#1f2a44'},
+      data:[{value:+rate.toFixed(1)}]}]
+  }); charts.cg=g;
+  // 账龄
+  const aging=[{name:'30天内',v:62,color:'#1aae8f'},{name:'30-60天',v:21,color:'#2f6fed'},{name:'60-90天',v:11,color:'#f5a623'},{name:'90天以上',v:6,color:'#e15555'}];
+  const arrears=should-collected;
+  const a=echarts.init(document.getElementById('cAging'));
+  a.setOption({
+    title:{text:'欠费账龄（共¥'+fmt(arrears)+'万）',left:'center',top:8,textStyle:{fontSize:13,color:'#6b7a99'}},
+    tooltip:{trigger:'item',formatter:p=>`${p.name}<br/>${p.value}% (¥${(arrears*p.value/100).toFixed(1)}万)`},
+    legend:{bottom:0},
+    series:[{type:'pie',radius:['34%','58%'],center:['50%','54%'],label:{formatter:'{b}\n{c}%'},
+      data:aging.map(d=>({name:d.name,value:d.v,itemStyle:{color:d.color}}))}]
+  }); charts.ag=a;
+  // 趋势
+  const t=echarts.init(document.getElementById('cCollectTrend'));
+  const sArr=MONTHS.map((_,i)=>{let s=0;cl.forEach(ci=>s+=shouldTotal(i,ci));return +s.toFixed(1);});
+  const cArr=MONTHS.map((_,i)=>{let s=0;cl.forEach(ci=>s+=collectTotal(i,ci));return +s.toFixed(1);});
+  const rArr=MONTHS.map((_,i)=>+(cArr[i]/sArr[i]*100).toFixed(1));
+  t.setOption({
+    title:{text:'应收/实收/收缴率',left:'center',top:8,textStyle:{fontSize:13,color:'#6b7a99'}},
+    tooltip:{trigger:'axis'},
+    legend:{bottom:0,data:['应收','实收','收缴率']},
+    grid:{left:45,right:45,top:50,bottom:40},
+    xAxis:{type:'category',data:MONTHS},
+    yAxis:[{type:'value',name:'万'},{type:'value',name:'%',max:100,min:80,axisLabel:{formatter:'{value}%'}}],
+    series:[
+      {name:'应收',type:'bar',data:sArr,itemStyle:{color:'#c5d4ec'}},
+      {name:'实收',type:'bar',data:cArr,itemStyle:{color:'#2f6fed'}},
+      {name:'收缴率',type:'line',yAxisIndex:1,data:rArr,itemStyle:{color:'#1aae8f'},symbolSize:7}
+    ]
+  }); charts.ct=t;
+  // 收款方式
+  document.getElementById('payBars').innerHTML=PAY_WAY.map(p=>`<div class="bar-wrap"><div class="nm">${p.name}</div><div class="bar"><i style="width:${p.v}%;background:${p.color}"></i></div><div class="vv">${p.v}%</div></div>`).join('');
+  // 欠费TOP5
+  const topData=[
+    {room:'A-3-1602',comm:'A小区',amt:1.86,months:8},
+    {room:'A-7-0501',comm:'A小区',amt:1.52,months:6},
+    {room:'B-2-1203',comm:'B小区',amt:1.34,months:7},
+    {room:'A-5-0808',comm:'A小区',amt:1.20,months:5},
+    {room:'B-4-0306',comm:'B小区',amt:0.96,months:4}
+  ];
+  document.getElementById('topArrears').innerHTML=topData.map(d=>`<tr><td>${d.room}</td><td>${d.comm}</td><td>¥${d.amt}万</td><td>${d.months}个月</td></tr>`).join('');
+  // 欠费表
+  const tb=document.querySelector('#tblArrears tbody');
+  tb.innerHTML=REV_ITEMS.map(it=>{
+    let s=0,c=0; cl.forEach(ci=>{s+=REV[it.key][ci][m];c+=REV[it.key][ci][m]*COLLECT[it.key][ci][m];});
+    const arr=s-c, r=s>0?c/s*100:100;
+    const hh=Math.round(arr/0.03)+Math.round((100-r)*2.5);
+    const st=r>=95?'ok':r>=90?'mid':'bad';
+    const stTxt=r>=95?'良好':r>=90?'关注':'风险';
+    return `<tr data-key="${it.key}"><td>${it.name}</td><td><span class="cat-badge ${CAT_BADGE[it.cat]}">${CAT_NAME[it.cat]}</span></td><td>${s.toFixed(1)}</td><td>${c.toFixed(1)}</td><td>${arr.toFixed(1)}</td><td><span class="tag-cell ${st}">${r.toFixed(1)}%</span></td><td>${hh}</td><td><span class="tag-cell ${st}">${stTxt}</span></td></tr>`;
+  }).join('');
+}
+
+/* ============ 成本 ============ */
+function renderCost(){
+  const m=curMonth, r=ratio();
+  const labor=(LABOR_MONTH[m].wage+LABOR_MONTH[m].social+LABOR_MONTH[m].welfare)*r;
+  const mgmt=MGMT_FEE.reduce((s,x)=>s+x.v,0)*r;
+  const p=echarts.init(document.getElementById('cCostPie'));
+  p.setOption({
+    title:{text:'成本结构',left:'center',top:8,textStyle:{fontSize:14,color:'#6b7a99'}},
+    tooltip:{trigger:'item',formatter:'{b}<br/>¥{c}万 ({d}%)'},
+    legend:{bottom:0},
+    series:[{type:'pie',radius:['36%','60%'],center:['50%','54%'],label:{formatter:'{b}\n{d}%'},
+      data:[{name:'人工费用(工资+社保+福利)',value:+labor.toFixed(1),itemStyle:{color:'#e15555'}},
+            {name:'管理费用(运营支出·不含工资)',value:+mgmt.toFixed(1),itemStyle:{color:'#2f6fed'}}]}]
+  }); charts.cp=p;
+  // 趋势
+  const laborArr=MONTHS.map((_,i)=>+((LABOR_MONTH[i].wage+LABOR_MONTH[i].social+LABOR_MONTH[i].welfare)*r).toFixed(1));
+  const mgmtArr=MONTHS.map(()=>+(MGMT_FEE.reduce((s,x)=>s+x.v,0)*r).toFixed(1));
+  const totalArr=laborArr.map((v,i)=>+(v+mgmtArr[i]).toFixed(1));
+  const t=echarts.init(document.getElementById('cCostTrend'));
+  t.setOption({
+    title:{text:'成本月度趋势',left:'center',top:8,textStyle:{fontSize:14,color:'#6b7a99'}},
+    tooltip:{trigger:'axis',valueFormatter:v=>'¥'+v+'万'},
+    legend:{bottom:0,data:['人工费用','管理费用','合计']},
+    grid:{left:50,right:20,top:50,bottom:40},
+    xAxis:{type:'category',data:MONTHS},yAxis:{type:'value',name:'万元'},
+    series:[
+      {name:'人工费用',type:'bar',stack:'c',data:laborArr,itemStyle:{color:'#e15555'}},
+      {name:'管理费用',type:'bar',stack:'c',data:mgmtArr,itemStyle:{color:'#2f6fed'}},
+      {name:'合计',type:'line',data:totalArr,itemStyle:{color:'#1aae8f'},symbolSize:7}
+    ]
+  }); charts.ct2=t;
+  // 人工表
+  let wageSum=0,socSum=0,welSum=0;
+  LABOR_DETAIL.forEach(d=>{
+    const cnt=d.aCnt+d.bCnt;
+    const wage=cnt*d.salary/10000;
+    const soc=wage*d.socialRate;
+    const wel=d.welfare;
+    wageSum+=wage; socSum+=soc; welSum+=wel;
+  });
+  laborSum=(wageSum+socSum+welSum)*r;
+  document.querySelector('#tblLabor tbody').innerHTML=LABOR_DETAIL.map(d=>{
+    const cnt=d.aCnt+d.bCnt;
+    const wage=+(cnt*d.salary/10000*r).toFixed(2);
+    const soc=+(cnt*d.salary/10000*d.socialRate*r).toFixed(2);
+    const wel=+(d.welfare*r).toFixed(2);
+    const sub=+(wage+soc+wel).toFixed(2);
+    return `<tr><td>${d.post}</td><td>${d.aCnt}</td><td>${d.bCnt}</td><td>${cnt}</td><td>${d.salary}</td><td>${wage}</td><td>${soc}</td><td>${wel}</td><td>${sub}</td><td>${(sub/laborSum*100).toFixed(1)}%</td></tr>`;
+  }).join('');
+  // 管理费用条
+  document.getElementById('mgmtBars').innerHTML=MGMT_FEE.map(x=>{
+    const v=+(x.v*r).toFixed(2);
+    return `<div class="bar-wrap"><div class="nm">${x.name}</div><div class="bar"><i style="width:${v/8.5*100}%;background:${x.color}"></i></div><div class="vv">¥${v}万</div></div>`;
+  }).join('');
+  // 维保细分
+  const maintItems=MGMT_FEE.filter(x=>x.name.includes('维保')||x.name.includes('维修'));
+  document.getElementById('maintBars').innerHTML=maintItems.map(x=>{
+    const v=+(x.v*r).toFixed(2);
+    return `<div class="bar-wrap"><div class="nm">${x.name}</div><div class="bar"><i style="width:${v/4.2*100}%;background:${x.color}"></i></div><div class="vv">¥${v}万</div></div>`;
+  }).join('');
+  // 人效
+  const totalPeople=LABOR_DETAIL.reduce((s,d)=>s+d.aCnt+d.bCnt,0);
+  const totalArea=curComm==='all'?34:COMM[+curComm].area;
+  const totalHH=curComm==='all'?3300:COMM[+curComm].households;
+  const effData=[
+    {nm:'人均管理户数',vv:(totalHH/totalPeople).toFixed(0)+'户/人',pct:totalHH/totalPeople/60*100,col:'#2f6fed'},
+    {nm:'人均管理面积',vv:(totalArea*10000/totalPeople).toFixed(0)+'㎡/人',pct:totalArea*10000/totalPeople/6000*100,col:'#1aae8f'},
+    {nm:'人工成本/户/月',vv:'¥'+(laborSum/totalHH*10000).toFixed(0)+'元',pct:Math.min(laborSum/totalHH*10000/200*100,100),col:'#e15555'},
+    {nm:'人工成本/㎡/月',vv:'¥'+(laborSum/totalArea).toFixed(2)+'元',pct:Math.min(laborSum/totalArea/2*100,100),col:'#f5a623'}
+  ];
+  document.getElementById('effBars').innerHTML=effData.map(e=>`<div class="bar-wrap"><div class="nm">${e.nm}</div><div class="bar"><i style="width:${Math.min(e.pct,100)}%;background:${e.col}"></i></div><div class="vv">${e.vv}</div></div>`).join('');
+}
+
+/* ============ 公共收益 ============ */
+function renderPublic(){
+  const m=curMonth, cl=commList(), r=ratio();
+  // 饼图：电梯广告 vs 场地租赁
+  let ad=0,vn=0; cl.forEach(ci=>{ad+=REV.elevatorAd[ci][m];vn+=REV.venueRent[ci][m];});
+  const p=echarts.init(document.getElementById('cPublicPie'));
+  p.setOption({
+    title:{text:'公共收益构成',left:'center',top:8,textStyle:{fontSize:14,color:'#6b7a99'}},
+    tooltip:{trigger:'item',formatter:'{b}<br/>¥{c}万 ({d}%)'},
+    legend:{bottom:0},
+    series:[{type:'pie',radius:['36%','60%'],center:['50%','54%'],label:{formatter:'{b}\n¥{c}万\n{d}%'},
+      data:[{name:'电梯广告收入',value:+ad.toFixed(1),itemStyle:{color:'#7c5cff'}},
+            {name:'场地租赁收入',value:+vn.toFixed(1),itemStyle:{color:'#d96fb0'}}]}]
+  }); charts.pp=p;
+  // 趋势
+  const adArr=MONTHS.map((_,i)=>{let s=0;cl.forEach(ci=>s+=REV.elevatorAd[ci][i]);return +s.toFixed(1);});
+  const vnArr=MONTHS.map((_,i)=>{let s=0;cl.forEach(ci=>s+=REV.venueRent[ci][i]);return +s.toFixed(1);});
+  const totalArr=adArr.map((v,i)=>+(v+vnArr[i]).toFixed(1));
+  const t=echarts.init(document.getElementById('cPublicTrend'));
+  t.setOption({
+    title:{text:'公共收益月度趋势',left:'center',top:8,textStyle:{fontSize:14,color:'#6b7a99'}},
+    tooltip:{trigger:'axis',valueFormatter:v=>'¥'+v+'万'},
+    legend:{bottom:0,data:['电梯广告','场地租赁','合计']},
+    grid:{left:45,right:20,top:50,bottom:40},
+    xAxis:{type:'category',data:MONTHS},yAxis:{type:'value',name:'万元'},
+    series:[
+      {name:'电梯广告',type:'bar',stack:'p',data:adArr,itemStyle:{color:'#7c5cff'}},
+      {name:'场地租赁',type:'bar',stack:'p',data:vnArr,itemStyle:{color:'#d96fb0'}},
+      {name:'合计',type:'line',data:totalArr,itemStyle:{color:'#1aae8f'},symbolSize:7}
+    ]
+  }); charts.pt3=t;
+  // 分配
+  const totalPub=ad+vn;
+  const mgmtFee=totalPub*PUB_SPLIT.mgmt;
+  const ownerPart=totalPub*PUB_SPLIT.owner;
+  const html=`
+    <div class="bar-wrap"><div class="nm">公共收益总额</div><div class="bar"><i style="width:100%;background:#7c5cff"></i></div><div class="vv">¥${totalPub.toFixed(1)}万</div></div>
+    <div class="bar-wrap"><div class="nm">物业经营管理费(30%)</div><div class="bar"><i style="width:30%;background:#2f6fed"></i></div><div class="vv">¥${mgmtFee.toFixed(1)}万</div></div>
+    <div class="bar-wrap"><div class="nm">归全体业主(70%)</div><div class="bar"><i style="width:70%;background:#1aae8f"></i></div><div class="vv">¥${ownerPart.toFixed(1)}万</div></div>
+    <div class="note" style="padding-top:8px;">注：物业提取的30%经营管理费计入公司经营收入（按6%计增值税）；归业主的70%存入业主公共收益账户，用于补充维修资金或业主大会决定的其他用途，不计入物业收入。</div>`;
+  document.getElementById('publicSplit').innerHTML=html;
+}
+
+/* ============ 税务 ============ */
+function renderTax(){
+  const m=curMonth, r=ratio();
+  const p=echarts.init(document.getElementById('cTaxPie'));
+  p.setOption({
+    title:{text:'税种构成',left:'center',top:8,textStyle:{fontSize:14,color:'#6b7a99'}},
+    tooltip:{trigger:'item',formatter:'{b}<br/>¥{c}万 ({d}%)'},
+    legend:{bottom:0},
+    series:[{type:'pie',radius:['36%','60%'],center:['50%','54%'],label:{formatter:'{b}\n{d}%'},
+      data:TAX_DETAIL.map(d=>({name:d.name,value:+(d.v*r).toFixed(2),itemStyle:{color:d.color}}))}]
+  }); charts.tp=p;
+  const factors=[0.92,0.95,0.98,1.0,1.02,1.05];
+  const totalArr=factors.map(f=>+(TAX_DETAIL.reduce((s,x)=>s+x.v,0)*f*r).toFixed(1));
+  const vatArr=factors.map(f=>+(9.96*f*r).toFixed(1));
+  const citArr=factors.map(f=>+(4.50*f*r).toFixed(1));
+  const t=echarts.init(document.getElementById('cTaxTrend'));
+  t.setOption({
+    title:{text:'税负月度趋势',left:'center',top:8,textStyle:{fontSize:14,color:'#6b7a99'}},
+    tooltip:{trigger:'axis',valueFormatter:v=>'¥'+v+'万'},
+    legend:{bottom:0,data:['增值税','企业所得税','税费合计']},
+    grid:{left:50,right:20,top:50,bottom:40},
+    xAxis:{type:'category',data:MONTHS},yAxis:{type:'value',name:'万元'},
+    series:[
+      {name:'增值税',type:'bar',data:vatArr,itemStyle:{color:'#2f6fed'}},
+      {name:'企业所得税',type:'bar',data:citArr,itemStyle:{color:'#7c5cff'}},
+      {name:'税费合计',type:'line',data:totalArr,itemStyle:{color:'#e15555'},symbolSize:7}
+    ]
+  }); charts.tt=t;
+  // 税表
+  const cl=commList();
+  const rows=[
+    {name:'物业费',cat:'biz',rate:'6%',type:'现代服务-物业管理',note:'一般纳税人6%'},
+    {name:'车位管理费',cat:'biz',rate:'6%',type:'现代服务',note:'同物业管理服务'},
+    {name:'垃圾清运费',cat:'biz',rate:'6%',type:'现代服务',note:'代收转付可差额扣除'},
+    {name:'商铺租金',cat:'biz',rate:'9%',type:'不动产经营租赁',note:'不动产租赁9%'},
+    {name:'房屋租金',cat:'biz',rate:'9%',type:'不动产经营租赁',note:'空置房出租'},
+    {name:'充电桩电费',cat:'biz',rate:'6%/3%',type:'转售电力/服务',note:'一般6%，小规模3%'},
+    {name:'电梯广告收入',cat:'pub',rate:'6%',type:'现代服务-广告位出租',note:'物业分成部分计税'},
+    {name:'场地租赁收入',cat:'pub',rate:'9%',type:'不动产经营租赁',note:'物业分成部分计税'},
+    {name:'代收代付水电费',cat:'pass',rate:'0%',type:'不计税',note:'代收性质不计税'},
+    {name:'装修押金',cat:'trust',rate:'0%',type:'暂收款',note:'退还前不确认收入'}
+  ];
+  document.querySelector('#tblTax tbody').innerHTML=rows.map(row=>{
+    let v=0;
+    const map={物业费:'property',车位管理费:'parking',垃圾清运费:'garbage',商铺租金:'shopRent',房屋租金:'houseRent',充电桩电费:'charging',电梯广告收入:'elevatorAd',场地租赁收入:'venueRent',代收代付水电费:'utility',装修押金:'deposit'};
+    const key=map[row.name]; cl.forEach(ci=>v+=REV[key][ci][m]); v*=r;
+    // 公共收益只按物业分成30%计税
+    if(row.cat==='pub') v=v*PUB_SPLIT.mgmt;
+    const rateNum=parseFloat(row.rate);
+    const tax=rateNum>0?+(v*rateNum/100).toFixed(2):0;
+    return `<tr><td>${row.name}</td><td><span class="cat-badge ${CAT_BADGE[row.cat]}">${CAT_NAME[row.cat]}</span></td><td>${v.toFixed(1)}</td><td>${row.type}</td><td>${row.rate}</td><td>${tax>0?'¥'+tax+'万':'—'}</td><td style="text-align:left;color:var(--sub)">${row.note}</td></tr>`;
+  }).join('');
+}
+
+/* ============ 利润 ============ */
+function renderProfit(){
+  const m=curMonth, r=ratio(), cl=commList();
+  let income=0,utility=0; cl.forEach(ci=>{income+=revTotal(m,ci);utility+=REV.utility[ci][m];});
+  const realIncome=income-utility;
+  const labor=(LABOR_MONTH[m].wage+LABOR_MONTH[m].social+LABOR_MONTH[m].welfare)*r;
+  const mgmt=MGMT_FEE.reduce((s,x)=>s+x.v,0)*r;
+  const tax=TAX_DETAIL.reduce((s,x)=>s+x.v,0)*r;
+  const profit=realIncome-labor-mgmt-tax;
+  const w=echarts.init(document.getElementById('cProfitWaterfall'));
+  w.setOption({
+    title:{text:'利润瀑布图（最新月）',left:'center',top:8,textStyle:{fontSize:14,color:'#6b7a99'}},
+    tooltip:{trigger:'axis',valueFormatter:v=>'¥'+v+'万'},
+    grid:{left:50,right:20,top:50,bottom:30},
+    xAxis:{type:'category',data:['经营收入','人工费用','管理费用','税费','净利润']},
+    yAxis:{type:'value',name:'万元'},
+    series:[{
+      type:'custom',
+      renderItem:(params,api)=>{
+        const cat=api.value(0),val=api.value(1);
+        const start=api.coord([cat,val>=0?0:val]);
+        const end=api.coord([cat,val>=0?val:0]);
+        const color=['#1aae8f','#e15555','#e15555','#e15555','#2f6fed'][cat];
+        return {type:'rect',shape:{x:start[0]-22,y:end[1],width:44,height:Math.abs(start[1]-end[1])},style:{fill:color,opacity:.85}};
+      },
+      data:[{value:[0,realIncome]},{value:[1,-labor]},{value:[2,-mgmt]},{value:[3,-tax]},{value:[4,profit]}],
+      label:{show:true,position:'top',formatter:p=>(p.value[1]>=0?'+':'')+p.value[1].toFixed(1)}
+    }]
+  }); charts.pw=w;
+  // 趋势
+  const realArr=MONTHS.map((_,i)=>{let s=0;cl.forEach(ci=>s+=revTotal(i,ci)-REV.utility[ci][i]);return +s.toFixed(1);});
+  const costArr=MONTHS.map((_,i)=>+((LABOR_MONTH[i].wage+LABOR_MONTH[i].social+LABOR_MONTH[i].welfare+MGMT_FEE.reduce((s,x)=>s+x.v,0))*r).toFixed(1));
+  const taxArr=[0.92,0.95,0.98,1.0,1.02,1.05].map(f=>+(TAX_DETAIL.reduce((s,x)=>s+x.v,0)*f*r).toFixed(1));
+  const profitArr=realArr.map((v,i)=>+(v-costArr[i]-taxArr[i]).toFixed(1));
+  const t=echarts.init(document.getElementById('cProfitTrend'));
+  t.setOption({
+    title:{text:'收入/成本/利润趋势',left:'center',top:8,textStyle:{fontSize:14,color:'#6b7a99'}},
+    tooltip:{trigger:'axis',valueFormatter:v=>'¥'+v+'万'},
+    legend:{bottom:0,data:['经营收入','总成本','净利润']},
+    grid:{left:50,right:20,top:50,bottom:40},
+    xAxis:{type:'category',data:MONTHS},yAxis:{type:'value',name:'万元'},
+    series:[
+      {name:'经营收入',type:'line',smooth:true,data:realArr,itemStyle:{color:'#2f6fed'},areaStyle:{color:'rgba(47,111,237,.1)'},symbolSize:7},
+      {name:'总成本',type:'line',smooth:true,data:costArr,itemStyle:{color:'#f5a623'},symbolSize:7},
+      {name:'净利润',type:'line',smooth:true,data:profitArr,itemStyle:{color:'#1aae8f'},symbolSize:7}
+    ]
+  }); charts.pt=t;
+  // 分小区
+  let ph='';
+  [0,1].forEach(ci=>{
+    const c=COMM[ci]; const cr=c.households/3300;
+    const inc=revTotal(m,ci)-REV.utility[ci][m];
+    const l=(LABOR_MONTH[m].wage+LABOR_MONTH[m].social+LABOR_MONTH[m].welfare)*cr;
+    const mg=MGMT_FEE.reduce((s,x)=>s+x.v,0)*cr;
+    const tx=TAX_DETAIL.reduce((s,x)=>s+x.v,0)*cr;
+    const pf=inc-l-mg-tx; const pr=inc?pf/inc*100:0;
+    ph+=`<div style="font-size:13px;font-weight:600;padding:4px 0;">${c.name}（净利率 ${pr.toFixed(1)}%）</div>`;
+    ph+=`<div class="bar-wrap"><div class="nm">经营收入</div><div class="bar"><i style="width:100%;background:#2f6fed"></i></div><div class="vv">¥${inc.toFixed(1)}万</div></div>`;
+    ph+=`<div class="bar-wrap"><div class="nm">人工费用</div><div class="bar"><i style="width:${l/inc*100}%;background:#e15555"></i></div><div class="vv">¥${l.toFixed(1)}万</div></div>`;
+    ph+=`<div class="bar-wrap"><div class="nm">管理费用</div><div class="bar"><i style="width:${mg/inc*100}%;background:#f5a623"></i></div><div class="vv">¥${mg.toFixed(1)}万</div></div>`;
+    ph+=`<div class="bar-wrap"><div class="nm">税费</div><div class="bar"><i style="width:${tx/inc*100}%;background:#7c5cff"></i></div><div class="vv">¥${tx.toFixed(1)}万</div></div>`;
+    ph+=`<div class="bar-wrap"><div class="nm">净利润</div><div class="bar"><i style="width:${Math.max(pf/inc*100,3)}%;background:#1aae8f"></i></div><div class="vv">¥${pf.toFixed(1)}万</div></div>`;
+  });
+  document.getElementById('profitBars').innerHTML=ph;
+}
+
+/* ============ 下钻 ============ */
+function showItemDrill(key,name){
+  const ygArr=REV[key][0].map(v=>+v.toFixed(1));
+  const chArr=REV[key][1].map(v=>+v.toFixed(1));
+  const ygRate=COLLECT[key][0].map(v=>+(v*100).toFixed(1));
+  const chRate=COLLECT[key][1].map(v=>+(v*100).toFixed(1));
+  document.getElementById('mTitle').textContent=name+' · 下钻分析';
+  document.getElementById('mBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div><div id="mChart1" class="chart"></div></div>
+      <div><div id="mChart2" class="chart"></div></div>
+    </div>
+    <div style="padding:12px 0 4px;font-size:13px;color:var(--sub);font-weight:600;">月度明细</div>
+    <table><thead><tr><th>月份</th><th>A小区应收(万)</th><th>A小区收缴率</th><th>B小区应收(万)</th><th>B小区收缴率</th><th>合计实收(万)</th></tr></thead>
+    <tbody>${MONTHS.map((mn,i)=>{
+      const yv=ygArr[i],cv=chArr[i],yc=ygRate[i],cc=chRate[i];
+      return `<tr><td>2026${mn}</td><td>${yv}</td><td>${yc}%</td><td>${cv}</td><td>${cc}%</td><td>${(yv*yc/100+cv*cc/100).toFixed(1)}</td></tr>`;
+    }).join('')}</tbody></table>`;
+  document.getElementById('modal').classList.add('show');
+  setTimeout(()=>{
+    const c1=echarts.init(document.getElementById('mChart1'));
+    c1.setOption({title:{text:'A/B小区月度趋势',left:'center',top:6,textStyle:{fontSize:13,color:'#6b7a99'}},
+      tooltip:{trigger:'axis',valueFormatter:v=>'¥'+v+'万'},legend:{bottom:0},grid:{left:45,right:15,top:40,bottom:35},
+      xAxis:{type:'category',data:MONTHS},yAxis:{type:'value',name:'万'},
+      series:[{name:'A小区',type:'bar',data:ygArr,itemStyle:{color:'#2f6fed'}},{name:'B小区',type:'bar',data:chArr,itemStyle:{color:'#1aae8f'}}]});
+    const c2=echarts.init(document.getElementById('mChart2'));
+    c2.setOption({title:{text:'收缴率对比',left:'center',top:6,textStyle:{fontSize:13,color:'#6b7a99'}},
+      tooltip:{trigger:'axis',valueFormatter:v=>v+'%'},legend:{bottom:0},grid:{left:45,right:15,top:40,bottom:35},
+      xAxis:{type:'category',data:MONTHS},yAxis:{type:'value',name:'%',max:100,min:80,axisLabel:{formatter:'{value}%'}},
+      series:[{name:'A小区',type:'line',data:ygRate,itemStyle:{color:'#2f6fed'},symbolSize:7},{name:'B小区',type:'line',data:chRate,itemStyle:{color:'#1aae8f'},symbolSize:7}]});
+  },50);
+}
+document.querySelector('#tblArrears tbody').addEventListener('click',e=>{
+  const tr=e.target.closest('tr'); if(!tr)return;
+  showItemDrill(tr.dataset.key,tr.querySelector('td').textContent);
+});
+document.getElementById('mClose').addEventListener('click',()=>document.getElementById('modal').classList.remove('show'));
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')document.getElementById('modal').classList.remove('show');});
+
+/* ============ 筛选 ============ */
+document.getElementById('fMonth').addEventListener('change',e=>{curMonth=e.target.value==='all'?5:+e.target.value;renderAll();});
+document.getElementById('fComm').addEventListener('change',e=>{curComm=e.target.value;renderAll();});
+const secMap={btnIncome:'income',btnOccupy:'occupy',btnCollect:'collect',btnCost:'cost',btnPublic:'public',btnTax:'tax',btnProfit:'profit'};
+Object.keys(secMap).forEach(id=>{
+  document.getElementById(id).addEventListener('click',()=>{
+    document.querySelectorAll('.filters .btn').forEach(b=>b.classList.remove('on'));
+    document.getElementById(id).classList.add('on');
+    document.querySelector(`.section[data-sec="${secMap[id]}"]`).scrollIntoView({behavior:'smooth',block:'start'});
+  });
+});
+
+function renderAll(){
+  renderKPI();renderRevenue();renderOccupy();renderCollect();renderCost();renderPublic();renderTax();renderProfit();
+}
+window.addEventListener('resize',()=>{Object.values(charts).forEach(c=>c&&c.resize());});
+renderAll();
+</script>
+</body>
+</html>
